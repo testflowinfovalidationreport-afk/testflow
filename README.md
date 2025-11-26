@@ -9,7 +9,7 @@ Installation
 
 Clone the repository:
 
-git clone https://github.com/yourusername/testflow.git](https://github.com/testflowinfovalidationreport-afk/testflow.git
+git clone https://github.com/testflowinfovalidationreport-afk/testflow.git
 cd testflow
 
 
