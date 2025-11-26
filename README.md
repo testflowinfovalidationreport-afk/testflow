@@ -5,7 +5,7 @@ It enables engineers to run .atoms test workflows, control instruments, and gene
 
 This package is provided under the TestFlow Community License (TCL) — free for internal testing, evaluation, and research, but not permitted for commercial use or integration into competing tools without written permission.
 
-📦 Installation
+Installation
 
 Clone the repository:
 
@@ -22,7 +22,7 @@ Or install in editable/dev mode:
 
 pip install -e .
 
-🚀 Usage Example
+ Usage Example
 import testflow
 
 script_path = r"C:/path/to/script.atoms"
