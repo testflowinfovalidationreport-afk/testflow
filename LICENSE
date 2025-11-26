@@ -1,0 +1,102 @@
+TestFlow Community License (TCL)
+
+Version 1.0 — January 2025
+
+Copyright © 2025 ATOMS / TestFlow
+All rights reserved.
+
+1. Purpose
+
+This license governs the use of the TestFlow source code (“Software”).
+It is designed to allow free internal use for testing, while restricting commercial use, redistribution, and competitive use without written permission from the copyright holder.
+
+2. Grant of Rights
+
+Subject to the terms of this license, you are granted a non-exclusive, non-transferable, revocable license to:
+
+Use the Software internally for testing, evaluation, research, or non-commercial laboratory workflows.
+
+Modify the Software internally for the purpose of testing or evaluation.
+
+Run the Software as part of internal engineering, QA, validation, or hardware testing processes.
+
+These rights are granted without fee.
+
+3. Restrictions
+
+You may NOT, under any circumstances:
+
+3.1 Commercial Use
+
+Use the Software, or any modified version, in:
+
+A commercial product
+
+A commercial service
+
+A SaaS / cloud offering
+
+Any customer-facing or revenue-generating product
+
+A consulting or service engagement where the Software becomes part of delivered work
+
+without prior written permission.
+
+3.2 Redistribution
+
+You may not:
+
+Distribute, sublicense, rent, lease, sell, or host the Software
+
+Make the Software available to third parties
+
+Upload the Software into public package managers or marketplaces
+
+without explicit permission.
+
+3.3 Competitive Use
+
+You may not:
+
+Use the Software to develop or improve a competing product to TestFlow, ATOMS, or any related hardware-testing, validation-automation, or measurement-automation tool.
+
+Incorporate the Software into any tool, framework, or platform intended for chip validation, instrument automation, or workflow automation that could compete with TestFlow.
+
+3.4 Trademark
+
+“TestFlow” and “ATOMS” trademarks may not be used without prior permission.
+
+4. Intellectual Property
+
+All intellectual property rights remain exclusively with ATOMS / TestFlow.
+
+No ownership rights or implied rights are granted through this license.
+
+5. Termination
+
+Your rights terminate automatically if:
+
+You violate any part of this license
+
+You initiate legal action against the copyright holder
+
+You use the Software commercially without obtaining permission
+
+Upon termination, you must stop using the Software and delete all copies.
+
+6. Commercial Licensing
+
+Commercial licensing is available.
+To obtain a commercial license, contact:
+
+ali@testflow.ai
+
+7. Disclaimer of Warranty
+
+The Software is provided “AS IS”, without warranty of any kind, express or implied.
+
+8. Limitation of Liability
+
+In no event shall the copyright holder be liable for any damages arising from the use or inability to use the Software.
+
+END OF TERMS
