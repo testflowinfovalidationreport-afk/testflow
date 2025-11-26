@@ -31,20 +31,22 @@ from typing import Dict, List, Any
 from typing import Optional, Dict, Any
 
 
+# Global variables for progress tracking
+_CURRENT_STEP = 0
+_TOTAL_STEPS = 0
+code_version= "Version:1.0.8"
+# Serial communication constants
+BAUDRATE = 115200
+
+# Global in-memory log list to store execution logs
+_TESTFLOW_LOGS = []
+
+stop_event = threading.Event()
+pause_event = threading.Event()
+debug_event = threading.Event()
+    
+    
 def run_script(script_path: str, output_path: str):
-    code_version= "Version:1.0.8"
-    # Serial communication constants
-    BAUDRATE = 115200
-
-    # Global in-memory log list to store execution logs
-    _TESTFLOW_LOGS = []
-
-    stop_event = threading.Event()
-    pause_event = threading.Event()
-    debug_event = threading.Event()
-
-
-
 
     # =================================================================================
     # Send SCPI Commands and Queries
@@ -1021,9 +1023,7 @@ def run_script(script_path: str, output_path: str):
             writer.writerows(reader)
 
 
-    # Global variables for progress tracking
-    _CURRENT_STEP = 0
-    _TOTAL_STEPS = 0
+
 
     def set_total_steps(total: int):
         """Set the total number of steps for progress tracking."""
@@ -2739,4 +2739,3 @@ def run_script(script_path: str, output_path: str):
     final_step = 100
     final_total_steps = compute_loop_weight(script_path)
         
-
