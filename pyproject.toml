@@ -4,10 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "testflow"
-version = "0.1.0"
-description = "TestFlow atoms script runner"
-authors = [{ name = "TestFlow_team" }]
-dependencies = []
+version = "0.1.1"
+description = "TestFlow ATOMS script execution engine for hardware validation"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+  { name = "Testflow team" }
+]
+license = { text = "TCL" }
+
+# 👇 All non-standard-library dependencies go here
+dependencies = [
+  "pyvisa",
+  "pyserial"
+]
 
 [tool.setuptools]
 packages = ["testflow"]
