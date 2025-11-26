@@ -12,7 +12,7 @@
     #--------------------------------------------------------------------------------
     #                               © ATOMS | TestFlow
     #================================================================================
-    code_version= "Version:1.0.8"
+code_version= "Version:1.0.8"
 
 import pyvisa
 import serial
@@ -2741,4 +2741,5 @@ def run_script(script_path: str, output_path: str):
         final_step = 100
         final_total_steps=compute_loop_weight(script_path)
         #print(f"[PROGRESS:{final_step}%|{final_total_steps}/{final_total_steps}] ")
+
         
