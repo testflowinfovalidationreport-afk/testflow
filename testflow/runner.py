@@ -12,7 +12,7 @@
     #--------------------------------------------------------------------------------
     #                               © ATOMS | TestFlow
     #================================================================================
-
+    
 
 import pyvisa
 import serial
@@ -2717,31 +2717,29 @@ def run_script(script_path: str, output_path: str):
         
      # *******************************************************************************************************************************
     # *******************************************************************************************************************************
-    if __name__ == "__main__":
-        # Run the main script with command line arguments
-        if len(sys.argv) < 3:
-            print("Usage: python executer_python.py <script_path> <output_path>")
+    
+    # Run the main script with command line arguments
+    if len(sys.argv) < 3:
+        print("Usage: python executer_python.py <script_path> <output_path>")
+        sys.exit(1)
+    
+    script_path = sys.argv[1]  # First argument after script name
+    output_path = sys.argv[2]  # Second argument
+    
+    # Validate input arguments
+    if not os.path.exists(script_path):
+        print(f"Error: Script file does not exist: {script_path}")
+        sys.exit(1)
+    
+    if not os.path.exists(output_path):
+        try:
+            os.makedirs(output_path, exist_ok=True)
+        except Exception as e:
+            print(f"Error: Cannot create output directory: {e}")
             sys.exit(1)
+    set_total_steps(compute_loop_weight(script_path))
+    out_file= run_script_new(script_path, output_path)
+    final_step = 100
+    final_total_steps=compute_loop_weight(script_path)
+    #print(f"[PROGRESS:{final_step}%|{final_total_steps}/{final_total_steps}] ")
         
-        script_path = sys.argv[1]  # First argument after script name
-        output_path = sys.argv[2]  # Second argument
-        
-        # Validate input arguments
-        if not os.path.exists(script_path):
-            print(f"Error: Script file does not exist: {script_path}")
-            sys.exit(1)
-        
-        if not os.path.exists(output_path):
-            try:
-                os.makedirs(output_path, exist_ok=True)
-            except Exception as e:
-                print(f"Error: Cannot create output directory: {e}")
-                sys.exit(1)
-        set_total_steps(compute_loop_weight(script_path))
-        out_file= run_script_new(script_path, output_path)
-        final_step = 100
-        final_total_steps=compute_loop_weight(script_path)
-        #print(f"[PROGRESS:{final_step}%|{final_total_steps}/{final_total_steps}] ")
-
-        
-
