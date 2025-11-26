@@ -12,7 +12,7 @@
     #--------------------------------------------------------------------------------
     #                               © ATOMS | TestFlow
     #================================================================================
-code_version= "Version:1.0.8"
+
 
 import pyvisa
 import serial
@@ -32,6 +32,7 @@ from typing import Optional, Dict, Any
 
 
 def run_script(script_path: str, output_path: str):
+    code_version= "Version:1.0.8"
     # Serial communication constants
     BAUDRATE = 115200
 
@@ -2743,3 +2744,4 @@ def run_script(script_path: str, output_path: str):
         #print(f"[PROGRESS:{final_step}%|{final_total_steps}/{final_total_steps}] ")
 
         
+
