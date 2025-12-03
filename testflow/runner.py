@@ -1222,7 +1222,8 @@ def run_script(script_path: str, output_path: str,debug_mode: bool=False):
             f.write(image_data)
 
 
-
+    def show_debug_message(title):
+        input(title)
 
     def show_message_dialog(title, message):
         #root = tk.Tk()
@@ -2577,7 +2578,7 @@ def run_script(script_path: str, output_path: str,debug_mode: bool=False):
                     #log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","END_NODE[",node_info['node_number'],"]")
                     wait_while_paused(output_location)
                     if debug_mode:
-                        show_message_dialog("Waiting you",pause_message)
+                        show_debug_message("Degug mode::: Node[", node_info['node_number'],"]   " ,node_info['node_type'], ".........Press Enter to continue")
                 elif check_line_prefix(Current_line, "Loop_end"):
                     #wait_while_paused(output_location)
                     # End of loop block; update iteration, possibly repeat, and log.
