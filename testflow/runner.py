@@ -1116,7 +1116,6 @@ def run_script(script_path: str, output_path: str):
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         _TESTFLOW_LOGS.append(f"{original_message.strip()}") 
 
-
     def save_all_logs(file_path: str):
         """
         Saves all collected logs to a file at the end of execution.
@@ -2739,4 +2738,5 @@ def run_script(script_path: str, output_path: str):
     final_step = 100
     final_total_steps = compute_loop_weight(script_path)
         
+
 
