@@ -2572,10 +2572,10 @@ def run_script(script_path: str, output_path: str):
                     # End of action block.
                     #log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","close action", current_action)
                     #log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ")
-                elif check_line_prefix(Current_line, "#END_NODE"):
+                #elif check_line_prefix(Current_line, "#END_NODE"):
                     # End of node block.
                     #log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","END_NODE[",node_info['node_number'],"]")
-                    wait_while_paused(output_location)
+                    #wait_while_paused(output_location)
                 elif check_line_prefix(Current_line, "Loop_end"):
                     #wait_while_paused(output_location)
                     # End of loop block; update iteration, possibly repeat, and log.
@@ -2739,3 +2739,4 @@ def run_script(script_path: str, output_path: str):
     final_step = 100
     final_total_steps = compute_loop_weight(script_path)
         
+
