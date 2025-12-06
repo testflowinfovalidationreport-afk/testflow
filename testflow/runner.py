@@ -46,7 +46,7 @@ pause_event = threading.Event()
 debug_event = threading.Event()
     
     
-def run_script(script_path: str, output_path: str,debug_mode: bool=False):
+def run_script(script_path: str, output_path: str):
 
     # =================================================================================
     # Send SCPI Commands and Queries
@@ -1222,8 +1222,7 @@ def run_script(script_path: str, output_path: str,debug_mode: bool=False):
             f.write(image_data)
 
 
-    def show_debug_message(title):
-        input(title)
+
 
     def show_message_dialog(title, message):
         #root = tk.Tk()
@@ -1995,8 +1994,8 @@ def run_script(script_path: str, output_path: str,debug_mode: bool=False):
 
 
     # *******************************************************************************************************************************
-    def run_another_workflow(sub_script_location: str, sub_output_location: str, temp_csv= False,debug_mode: bool=False ):
-        tempfile= run_script_new(sub_script_location, sub_output_location,True,debug_mode)
+    def run_another_workflow(sub_script_location: str, sub_output_location: str, temp_csv= False):
+        tempfile= run_script_new(sub_script_location, sub_output_location,True)
         log_print("Ended a workflow, file is =", tempfile)
         return tempfile
 
@@ -2312,7 +2311,7 @@ def run_script(script_path: str, output_path: str,debug_mode: bool=False):
         return match.group(1).strip()
 
 
-    def run_script_new(script_location: str, output_location: str, temp_csv: bool= False,debug_mode: bool=False):
+    def run_script_new(script_location: str, output_location: str, temp_csv: bool= False):
         # Print a large TestFlow banner at the start of execution.
         if not temp_csv:
             print_big_testflow_banner()
@@ -2577,8 +2576,6 @@ def run_script(script_path: str, output_path: str,debug_mode: bool=False):
                     # End of node block.
                     #log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","END_NODE[",node_info['node_number'],"]")
                     wait_while_paused(output_location)
-                    if debug_mode:
-                        show_debug_message("Degug mode::: Node[", node_info['node_number'],"]   " ,node_info['node_type'], ".........Press Enter to continue")
                 elif check_line_prefix(Current_line, "Loop_end"):
                     #wait_while_paused(output_location)
                     # End of loop block; update iteration, possibly repeat, and log.
@@ -2608,6 +2605,7 @@ def run_script(script_path: str, output_path: str,debug_mode: bool=False):
                     time.sleep(delay_time)                    
 
                 elif check_line_prefix(Current_line, "MESSAGE:"):
+                    #print("I am here")
                     message_is =extract_prefixed_line(Current_line, "MESSAGE:")
                     write_status(f"{output_location}status.txt","pause")
                     # Check for pause/stop commands
@@ -2736,7 +2734,7 @@ def run_script(script_path: str, output_path: str,debug_mode: bool=False):
     # ---- Main execution logic (your original code) ----
     set_total_steps(compute_loop_weight(script_path))
 
-    out_file = run_script_new(script_path, output_path,False,debug_mode)
+    out_file = run_script_new(script_path, output_path)
 
     final_step = 100
     final_total_steps = compute_loop_weight(script_path)
