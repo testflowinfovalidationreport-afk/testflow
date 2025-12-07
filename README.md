@@ -22,6 +22,10 @@ Or install in editable/dev mode:
 
 pip install -e .
 
+A VISA provider is needed, like NI VISA:
+https://www.ni.com/en/support/downloads/drivers/download.ni-visa.html
+
+
  Usage Example
 import testflow
 
