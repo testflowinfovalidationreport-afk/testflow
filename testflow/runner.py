@@ -1,4 +1,4 @@
-    #Version:1.0.8
+    #Version:1.0.9
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -34,7 +34,7 @@ from typing import Optional, Dict, Any
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:1.0.8"
+code_version= "Version:1.0.9"
 # Serial communication constants
 BAUDRATE = 115200
 
@@ -46,7 +46,7 @@ pause_event = threading.Event()
 debug_event = threading.Event()
     
     
-def run_script(script_path: str, output_path: str):
+def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
     # =================================================================================
     # Send SCPI Commands and Queries
@@ -2308,9 +2308,11 @@ def run_script(script_path: str, output_path: str):
             sys.exit(1)
 
         return match.group(1).strip()
+        
+    def show_debug_message(title):
+        input(title)
 
-
-    def run_script_new(script_location: str, output_location: str, temp_csv: bool= False):
+    def run_script_new(script_location: str, output_location: str, temp_csv: bool= False,debug_mode: bool=False):
         # Print a large TestFlow banner at the start of execution.
         if not temp_csv:
             print_big_testflow_banner()
@@ -2572,10 +2574,12 @@ def run_script(script_path: str, output_path: str):
                     # End of action block.
                     #log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","close action", current_action)
                     #log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ")
-                #elif check_line_prefix(Current_line, "#END_NODE"):
+                elif check_line_prefix(Current_line, "#END_NODE"):
                     # End of node block.
                     #log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","END_NODE[",node_info['node_number'],"]")
                     #wait_while_paused(output_location)
+                    if debug_mode:
+                        show_debug_message(f'Degug mode::: Node[", {node_info['node_number']}] ,{node_info['node_type']}.........Press Enter to continue')
                 elif check_line_prefix(Current_line, "Loop_end"):
                     #wait_while_paused(output_location)
                     # End of loop block; update iteration, possibly repeat, and log.
@@ -2737,11 +2741,10 @@ def run_script(script_path: str, output_path: str):
     # ---- Main execution logic (your original code) ----
     set_total_steps(compute_loop_weight(script_path))
 
-    out_file = run_script_new(script_path, output_path)
+    out_file = run_script_new(script_path, output_path,False,debug_mode)
 
     final_step = 100
     final_total_steps = compute_loop_weight(script_path)
         
-
 
 
