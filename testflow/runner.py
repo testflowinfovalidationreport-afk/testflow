@@ -1290,7 +1290,6 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         #out_dir = os.path.dirname(os.path.abspath(output_path))
         status_file = os.path.join(output_path, 'status.txt')
         try:
-            log_print(status_file)
             if os.path.exists(status_file):
                 os.remove(status_file)
                 
