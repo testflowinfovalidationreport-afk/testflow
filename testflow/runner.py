@@ -1328,11 +1328,13 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         Deletes the status.txt file in the same directory as output_path.
         Does nothing if the file does not exist.
         """
-        out_dir = os.path.dirname(os.path.abspath(output_path))
-        status_file = os.path.join(out_dir, 'status.txt')
+        #out_dir = os.path.dirname(os.path.abspath(output_path))
+        status_file = os.path.join(output_path, 'status.txt')
         try:
+            log_print(status_file)
             if os.path.exists(status_file):
                 os.remove(status_file)
+                
         except Exception as e:
             log_print(f"Error deleting status file: {e}")
 
@@ -2311,8 +2313,18 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         
     def show_debug_message(title):
         input(title)
-
+    def create_out_directory(output_location,dir_name):
+        # Construct full path: <output_location>/out
+        out_dir = os.path.join(output_location, dir_name)
+        
+        # Create directory (no error if it already exists)
+        os.makedirs(out_dir, exist_ok=True)
+        
+        return out_dir
+    
     def run_script_new(script_location: str, output_location: str, temp_csv: bool= False,debug_mode: bool=False):
+        new_dir_name = Path(script_location).stem + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_location=create_out_directory(output_location,new_dir_name)
         # Print a large TestFlow banner at the start of execution.
         if not temp_csv:
             print_big_testflow_banner()
@@ -2340,7 +2352,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         node_id = 1
         INST_VISA=""
         current_action=""
-        write_status(f"{output_location}status.txt","Running")
+        write_status(f"{output_location}\status.txt","Running")
         status = check_status_file(output_location)
         #log_print("                File is ",status)
         # Create the CSV file for results, and extract header map.
@@ -2712,13 +2724,14 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         # Save logs to file.
         log_file=f"{output_location}/{file_name}.log"
         save_all_logs(log_file)
+        delete_status_file(output_location)
         
         if temp_csv:   
             return file_name
         else:
             return 0
             
-        delete_status_file(f"{output_location}/status.txt")
+        
         
         
         
