@@ -908,40 +908,6 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         return header
 
 
-
-    def xxcreate_csv_file(file_path: str, script_path: str, temp_csv=False):
-        """
-        Creates a CSV file for TestFlow output.
-        If file_path is a directory, a default name Out<YYYY-MM-DD>_<HHMM>.csv is used.
-        """
-        # If the provided path is only a directory, generate a default filename with timestamp
-        if os.path.isdir(file_path) or file_path.endswith(os.sep):
-            now_str = datetime.now().strftime("%Y-%m-%d_%H%M")
-            file_path = os.path.join(file_path, f"Out{now_str}.csv")
-
-        # Ensure the directory for the file exists
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-        # Generate CSV column headers based on the script structure
-        headers = build_csv_headers_from_script(script_path)
-
-        # Open the file and write the header row as the first line
-        with open(file_path, mode="w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(headers)
-
-        # Create a dictionary mapping header names to their column indices
-        header_index_map = {h: i for i, h in enumerate(headers)}
-
-        # Extract the filename (without extension) for later use in logs/references
-        filename_no_ext = os.path.splitext(os.path.basename(file_path))[0]
-
-        log_print(f"[INFO] CSV file created: {file_path}")
-        return file_path, filename_no_ext, header_index_map
-
-
-
-
     def create_csv_file(file_path: str, script_path: str, temp_csv: bool = False):
         """
         Creates a CSV file for TestFlow output.
@@ -988,7 +954,76 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         log_print(f"[INFO] CSV file created: {file_path}")
         return file_path, filename_no_ext, header_index_map
 
+    def safe_read_csv(file_path, retries=100, delay=1):
+        """
+        Safely reads a CSV file into memory.
+        Automatically retries if the file is locked (e.g., open in Excel).
+        """
 
+        for attempt in range(1, retries + 1):
+            try:
+                with open(file_path, mode="r", newline="", encoding="utf-8") as f:
+                    return list(csv.reader(f))
+
+            except PermissionError:
+                print(f"[Warning] File is open or locked. Cannot read yet: {os.path.basename(file_path)}")
+                print(f"Retrying in {delay} seconds... (attempt {attempt}/{retries})")
+                time.sleep(delay)
+
+            except Exception as e:
+                print(f"[Error] Unexpected error reading file: {e}")
+                raise e
+
+        # If we exhausted all retries
+        raise PermissionError(
+            f"Could not read '{file_path}' because it remained locked after {retries} attempts."
+        )
+        
+    def safe_write_csv(file_path, rows, retries=100, delay=1):
+        """
+        Safely writes rows to a CSV file.
+        Automatically retries if the file is locked (e.g., open in Excel).
+        Writes into a temporary file then atomically replaces the original.
+        """
+        temp_path = file_path + ".tmp"
+
+        for attempt in range(1, retries + 1):
+            try:
+                # 1) Write to a temporary file (always succeeds if *you* are not locking it)
+                with open(temp_path, mode="w", newline="", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    writer.writerows(rows)
+
+                # 2) Try replacing the original (THIS is the step that fails when file is open)
+                os.replace(temp_path, file_path)
+
+                return  # Success!
+
+            except PermissionError:
+                # Clean up temp file
+                if os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except:
+                        pass
+
+                print(f"[Warning] '{os.path.basename(file_path)}' is currently open or locked.")
+                print(f"Retrying in {delay} seconds... (attempt {attempt}/{retries})")
+                time.sleep(delay)
+
+            except Exception as e:
+                if os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except:
+                        pass
+                print(f"[Error] Unexpected write error: {e}")
+                raise
+
+        raise PermissionError(
+            f"Could not write to '{file_path}' — it remained locked after {retries} retries."
+        )
+    
     def update_csv_cell(file_path: str, row_index: int, column, value):
         """
         Updates a specific cell in a CSV file by row and column.
@@ -998,8 +1033,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             raise FileNotFoundError(f"CSV file not found: {file_path}")
 
         # Read the full file into memory (list of rows)
-        with open(file_path, mode="r", newline="", encoding="utf-8") as f:
-            reader = list(csv.reader(f))
+        reader = safe_read_csv(file_path)
 
         # If column is specified by name, resolve its index from the header row
         if isinstance(column, str):
@@ -1018,9 +1052,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         reader[row_index][col_index] = str(value)
 
         # Rewrite the entire CSV file with updated content
-        with open(file_path, mode="w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerows(reader)
+        safe_write_csv(file_path, reader)
 
 
 
@@ -1308,8 +1340,9 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         """Wait while the script is paused, checking status periodically."""
         while True:
             status = check_status_file(output_path)
+
+            # Case 1: Resume the script
             if status == 'resume':
-                # Reset status to running
                 try:
                     status_file = os.path.join(output_path, 'status.txt')
                     with open(status_file, 'w') as f:
@@ -1317,10 +1350,19 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 except Exception as e:
                     log_print(f"Error updating status file: {e}")
                 break
+
+            # Case 2: Script is already running → break immediately
+            elif status == 'Running':
+                break
+
+            # Case 3: Stop execution
             elif status == 'stop':
                 log_print("Script execution stopped by user")
                 sys.exit(0)
-            time.sleep(1)  # Check every second
+
+            # Otherwise (pause or anything else) → wait and check again
+            time.sleep(1)
+
 
 
     def delete_status_file(output_path):
@@ -2589,7 +2631,15 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 elif check_line_prefix(Current_line, "#END_NODE"):
                     # End of node block.
                     #log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","END_NODE[",node_info['node_number'],"]")
-                    #wait_while_paused(output_location)
+                                # Check for pause/stop commands
+                    status = check_status_file(output_location) 
+                    if status == 'pause':
+                        log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution paused by user")
+                        wait_while_paused(output_location)
+                        log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution resumed")
+                    elif status == 'stop':
+                        break 
+                        
                     if debug_mode:
                         show_debug_message(f'Degug mode::: Node[", {node_info['node_number']}] ,{node_info['node_type']}.........Press Enter to continue')
                 elif check_line_prefix(Current_line, "Loop_end"):
