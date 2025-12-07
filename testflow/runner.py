@@ -440,89 +440,6 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
     # =================================================================================
     # VISA Validation
     # =================================================================================
-    def xxvalidate_visa_connections(script_path: str):
-        """Ensures all VISA addresses in script are connected, else exits program."""
-        visa_addresses_in_script = set()
-        disconnected_addresses = []
-
-        try:
-            with open(script_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    matches = re.findall(r'\b(?:V\d{6}|USB[^\s"]+|TCPIP[^\s"]+|GPIB[^\s"]+)', line)
-                    visa_addresses_in_script.update(matches)
-        except Exception as e:
-            log_print(f"Error reading script: {e}")
-            sys.exit(1)
-
-        try:
-            rm = pyvisa.ResourceManager()
-            connected_resources = rm.list_resources()
-
-            for addr in visa_addresses_in_script:
-                if addr not in connected_resources:
-                    disconnected_addresses.append(addr)
-        except Exception as e:
-            log_print(f"Error accessing VISA instruments: {e}")
-            sys.exit(1)
-
-        if disconnected_addresses:
-            log_print(" Error: The following VISA instruments are not connected:")
-            for dev in disconnected_addresses:
-                log_print(f" - {dev}")
-            sys.exit("Missing required VISA connections.")
-        else:
-            log_print(" All VISA instruments in script are connected.")
-
-    def xxxvalidate_visa_connections(script_path: str):
-        """Ensures all VISA addresses in script are connected, else exits program."""
-        visa_addresses_in_script = set()
-        disconnected_addresses = []
-
-        # 1) Extract VISA addresses from script
-        try:
-            with open(script_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    matches = re.findall(
-                        r'\b(?:V\d{6}|USB[^\s"]+|TCPIP[^\s"]+|GPIB[^\s"]+)',
-                        line
-                    )
-                    visa_addresses_in_script.update(matches)
-        except Exception as e:
-            log_print(f"Error reading script: {e}")
-            sys.exit(1)
-
-        # If script doesn't reference any VISA addresses, don't claim "all connected"
-        if not visa_addresses_in_script:
-            log_print(" No VISA instruments found in script. Skipping VISA connection validation.")
-            return
-
-        # 2) Query connected VISA resources
-        try:
-            rm = pyvisa.ResourceManager()
-            connected_resources = rm.list_resources()
-        except Exception as e:
-            log_print(f"Error accessing VISA instruments: {e}")
-            sys.exit(1)
-
-        # If script needs instruments but none are connected at all
-        if not connected_resources:
-            log_print(" Error: Script requires VISA instruments, but none are connected.")
-            for addr in sorted(visa_addresses_in_script):
-                log_print(f" - {addr}")
-            sys.exit("Missing required VISA connections.")
-
-        # 3) Compare required vs connected
-        for addr in visa_addresses_in_script:
-            if addr not in connected_resources:
-                disconnected_addresses.append(addr)
-
-        if disconnected_addresses:
-            log_print(" Error: The following VISA instruments are not connected:")
-            for dev in disconnected_addresses:
-                log_print(f" - {dev}")
-            sys.exit("Missing required VISA connections.")
-        else:
-            log_print(" All VISA instruments in script are connected.")
 
     def validate_visa_connections(script_path: str):
         """Ensures all VISA addresses in script are connected, else exits program."""
@@ -2256,31 +2173,6 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
         return total
 
-
-
-    def xxeval_expr_line(expr: str):
-        """
-        Evaluates a math expression from a single line of text.
-        If any error occurs, prints an error message and exits the program.
-        """
-        expr = expr.strip()
-
-        if not expr:
-            print("[ERROR] Expression is empty or only whitespace.")
-            sys.exit(1)
-
-        try:
-            # Simple / unsafe eval: only use if you fully trust the input
-            result = eval(expr)
-            return result
-
-        except SyntaxError as e:
-            print(f"[ERROR] Invalid expression syntax: {e}")
-            sys.exit(1)
-
-        except Exception as e:
-            print(f"[ERROR] Failed to evaluate expression: {e}")
-            sys.exit(1)
 
 
     def eval_expr_after_equal(line: str):
