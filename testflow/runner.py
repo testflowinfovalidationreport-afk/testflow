@@ -2464,6 +2464,7 @@ def run_script(script_path: str, output_path: str):
                     log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","████████████████████████ LOOP ",this_loop_n," => Iteration= ",this_loop_current_iteration,"████████████████████████")
                     # Define open loop and update CSV.
                     loop_column_name=f"Loop({node_id})"
+                    update_csv_cell(outpath,Data_line,"N",Data_line)
                     update_csv_cell(outpath,Data_line,loop_column_name,this_loop_current_iteration)
                 elif check_line_prefix(Current_line, "Variable:"):
                     # When a variable line is found, update its current value for this iteration.
@@ -2741,5 +2742,6 @@ def run_script(script_path: str, output_path: str):
     final_step = 100
     final_total_steps = compute_loop_weight(script_path)
         
+
 
 
