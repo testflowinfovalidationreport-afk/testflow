@@ -22,7 +22,7 @@ Or install in editable/dev mode:
 
 pip install -e .
 
-A VISA provider is needed, like NI VISA:
+#A VISA provider is needed, like NI VISA:
 https://www.ni.com/en/support/downloads/drivers/download.ni-visa.html
 
 
@@ -37,30 +37,24 @@ testflow.run_script(script_path, output_path)
 
 This will parse the ATOMS script, execute supported commands, interact with connected instruments, and generate output files in the specified directory.
 
-📁 Repository Structure
+#Repository Structure
 testflow/
 ├─ LICENSE
 ├─ pyproject.toml
+├─ Examples
 └─ src/
     └─ testflow/
         ├─ __init__.py
         └─ runner.py
 
-
-runner.py
-Contains the main execution engine for .atoms scripts.
-
-init.py
-Exposes the public API for users.
-
-LICENSE
+#LICENSE
 Custom TestFlow Community License restricting commercial and competitive use.
 
-🔒 License
+#License
 
 This project is licensed under the TestFlow Community License (TCL).
 
-✔ Allowed
+#Allowed
 
 Internal testing and validation
 
@@ -68,7 +62,7 @@ Research and educational use
 
 Internal modifications for evaluation
 
-✘ Not Allowed
+#Not Allowed
 
 Commercial use
 
@@ -82,6 +76,6 @@ Offering TestFlow as a SaaS / cloud service
 
 For commercial licensing, contact:
 
-ali@testflow.ai
+ali@testflowinc.com
 
 See the full terms in the LICENSE file.
