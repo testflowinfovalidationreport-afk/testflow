@@ -629,12 +629,12 @@ def run_script(script_path: str, output_path: str):
         """Prints big ASCII banner for TestFlow start."""
         # Print TestFlow ASCII art banner and legal/info lines using the unified logger
         log_print_panner(r"""
-    ████████╗███████╗███████╗████████╗      ███████╗██╗      ██████╗ ██╗    ██╗
-    ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝      ██╔════╝██║     ██╔═══██╗██║    ██║
-       ██║   █████╗  ███████╗   ██║    ███  █████╗  ██║     ██║   ██║██║ █╗ ██║
-       ██║   ██╔══╝  ╚════██║   ██║         ██╔══╝  ██║     ██║   ██║██║███╗██║
-       ██║   ███████╗███████║   ██║         ██╗     ███████╗╚██████╔╝╚███╔███╔╝
-       ╚═╝   ╚══════╝╚══════╝   ╚═╝         ╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝ 
+████████╗███████╗███████╗████████╗      ███████╗██╗      ██████╗ ██╗    ██╗
+╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝      ██╔════╝██║     ██╔═══██╗██║    ██║
+   ██║   █████╗  ███████╗   ██║    ███  █████╗  ██║     ██║   ██║██║ █╗ ██║
+   ██║   ██╔══╝  ╚════██║   ██║         ██╔══╝  ██║     ██║   ██║██║███╗██║
+   ██║   ███████╗███████║   ██║         ██╗     ███████╗╚██████╔╝╚███╔███╔╝
+   ╚═╝   ╚══════╝╚══════╝   ╚═╝         ╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝ 
         """)
         # Visual separators and centered disclaimer text
         log_print_panner("=" * 80)
@@ -662,12 +662,12 @@ def run_script(script_path: str, output_path: str):
         """
         # Print a completion banner to indicate the end of a TestFlow run
         log_print_panner(r"""
-    ████████╗███████╗███████╗████████╗     ██████╗   ██████╗ ███╗   ██╗███████╗
-    ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝
-       ██║   █████╗  ███████╗   ██║        ██║   ██║██║   ██║██╔██╗ ██║█████╗  
-       ██║   ██╔══╝  ╚════██║   ██║        ██║   ██║██║   ██║██║╚██╗██║██╔══╝  
-       ██║   ███████╗███████║   ██║        ██████ ╔╝╚██████╔╝██║ ╚████║███████╗
-       ╚═╝   ╚══════╝╚══════╝   ╚═╝          ╚════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝
+████████╗███████╗███████╗████████╗     ██████╗   ██████╗ ███╗   ██╗███████╗
+╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝
+   ██║   █████╗  ███████╗   ██║        ██║   ██║██║   ██║██╔██╗ ██║█████╗  
+   ██║   ██╔══╝  ╚════██║   ██║        ██║   ██║██║   ██║██║╚██╗██║██╔══╝  
+   ██║   ███████╗███████║   ██║        ██████ ╔╝╚██████╔╝██║ ╚████║███████╗
+   ╚═╝   ╚══════╝╚══════╝   ╚═╝          ╚════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝
             """)
 
     def print_big_teststopped_banner():
@@ -2693,9 +2693,7 @@ def run_script(script_path: str, output_path: str):
 
         #=================================================== End While 1st   
         
-        # Save logs to file.
-        log_file=f"{output_location}/{file_name}.log"
-        save_all_logs(log_file)
+
         
         if status=="stop":
             print_big_teststopped_banner()  
@@ -2703,8 +2701,13 @@ def run_script(script_path: str, output_path: str):
             if temp_csv:
                 log_print("========== Sub script ended ==========")
             else:
-                print_big_testdone_banner()    
-
+                log_print("")
+                print_big_testdone_banner()   
+                
+        # Save logs to file.
+        log_file=f"{output_location}/{file_name}.log"
+        save_all_logs(log_file)
+        
         if temp_csv:   
             return file_name
         else:
