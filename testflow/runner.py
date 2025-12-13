@@ -1,4 +1,4 @@
-    #Version:1.0.9
+    #Version:1.1.0
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -34,7 +34,7 @@ from typing import Optional, Dict, Any
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:1.0.9"
+code_version= "Version:1.1.0"
 # Serial communication constants
 BAUDRATE = 115200
 
@@ -44,7 +44,9 @@ _TESTFLOW_LOGS = []
 stop_event = threading.Event()
 pause_event = threading.Event()
 debug_event = threading.Event()
-    
+
+from colorama import init, Back, Fore, Style
+init()  # enables ANSI support on Windows 
     
 def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
@@ -59,7 +61,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             instrument.write(command)
             instrument.close()
         except Exception as e:
-            log_print(f"TestFlow says Error: {e}")
+            log_print(f"\033[31mTestFlow says Error: {e}\033[0m")
 
 
     def send_scpi_query(visa_address: str, query: str):
@@ -74,7 +76,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             instrument.close()
             return reply_stripped
         except Exception as e:
-            log_print(f"TestFlow says Error: {e}")
+            log_print(f"\033[31mTestFlow says Error: {e}\033[0m")
             return None
 
 
@@ -89,7 +91,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 ser.write((command.strip() + '\r\n').encode())
                 time.sleep(0.1)  # Small delay for processing
         except Exception as e:
-            log_print(f"TestFlow says Error: {e}")
+            log_print(f"\033[31mTestFlow says Error: {e}\033[0m")
 
 
     def send_serial_query(serial_port: str, query: str):
@@ -104,7 +106,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 reply = ser.read_all().decode(errors='ignore')
                 return reply.strip()
         except Exception as e:
-            log_print(f"TestFlow says Error: {e}")
+            log_print(f"\033[31mTestFlow says Error: {e}\033[0m")
             return None
 
 
@@ -118,7 +120,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 lines = file.readlines()
             return len(lines)
         except Exception as e:
-            log_print(f"Error reading script: {e}")
+            log_print(f"\033[31mError reading script: {e}\033[0m")
             return 0
 
 
@@ -286,7 +288,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 i += 1
 
         except Exception as e:
-            log_print(f"Error parsing variable arrays: {e}")
+            log_print(f"\033[31mError parsing variable arrays: {e}\033[0m")
 
         return variable_arrays
 
@@ -467,12 +469,12 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     visa_addresses_in_script.update(matches)
 
         except Exception as e:
-            log_print(f"Error reading script: {e}")
+            log_print(f"\033[31mError reading script: {e}\033[0m")
             sys.exit(1)
 
         # If script doesn't reference any VISA addresses, don't claim "all connected"
         if not visa_addresses_in_script:
-            log_print(" No VISA instruments found in script. Skipping VISA connection validation.")
+            log_print("\033[31m No VISA instruments found in script. Skipping VISA connection validation.\033[0m")
             return
 
         # 2) Query connected VISA resources
@@ -480,12 +482,12 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             rm = pyvisa.ResourceManager()
             connected_resources = rm.list_resources()
         except Exception as e:
-            log_print(f"Error accessing VISA instruments: {e}")
+            log_print(f"\033[31mError accessing VISA instruments: {e}\033[0m")
             sys.exit(1)
 
         # If script needs instruments but none are connected at all
         if not connected_resources:
-            log_print(" Error: Script requires VISA instruments, but none are connected.")
+            log_print(" \033[31mError: Script requires VISA instruments, but none are connected.\033[0m")
             for addr in sorted(visa_addresses_in_script):
                 log_print(f" - {addr}")
             sys.exit("Missing required VISA connections.")
@@ -496,12 +498,12 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 disconnected_addresses.append(addr)
 
         if disconnected_addresses:
-            log_print(" Error: The following VISA instruments are not connected:")
+            log_print(" \033[31mError: The following VISA instruments are not connected:\033[0m")
             for dev in disconnected_addresses:
                 log_print(f" - {dev}")
             sys.exit("Missing required VISA connections.")
         else:
-            log_print(" All VISA instruments in script are connected.")
+            log_print(" \033[32mAll VISA instruments in script are connected.\033[0m")
 
     # =================================================================================
     # Utility Functions: Action titles, delays, node parsing
@@ -534,7 +536,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 log_print(f"⚠ Unknown unit '{unit}', assuming milliseconds.")
                 return int(time_value)
         except Exception as e:
-            log_print(f"Error parsing delay line: {e}")
+            log_print(f"\033[31mError parsing delay line: {e}\033[0m")
             return 10  # fallback default
 
 
@@ -545,16 +547,17 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
     def print_big_testflow_banner():
         """Prints big ASCII banner for TestFlow start."""
         # Print TestFlow ASCII art banner and legal/info lines using the unified logger
-        log_print_panner(r"""
+        
+        log_print_panner( Fore.GREEN +r"""
 ████████╗███████╗███████╗████████╗      ███████╗██╗      ██████╗ ██╗    ██╗
 ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝      ██╔════╝██║     ██╔═══██╗██║    ██║
    ██║   █████╗  ███████╗   ██║    ███  █████╗  ██║     ██║   ██║██║ █╗ ██║
    ██║   ██╔══╝  ╚════██║   ██║         ██╔══╝  ██║     ██║   ██║██║███╗██║
    ██║   ███████╗███████║   ██║         ██╗     ███████╗╚██████╔╝╚███╔███╔╝
    ╚═╝   ╚══════╝╚══════╝   ╚═╝         ╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝ 
-        """)
+        """+ Style.RESET_ALL)
         # Visual separators and centered disclaimer text
-        log_print_panner("=" * 80)
+        log_print_panner(Fore.GREEN +"=" * 80)
         log_print_panner("DISCLAIMER".center(80))
         log_print_panner("=" * 80)
         # Legal / ownership text centered to match the banner style
@@ -570,7 +573,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         log_print_panner("=" * 80)
         # Blank line for spacing
         log_print_panner((datetime.now().strftime("%Y-%m-%d %H:%M:%S")).center(80))
-        log_print_panner("=" * 80)
+        log_print_panner("=" * 80+ Style.RESET_ALL)
         
 
     def print_big_testdone_banner():
@@ -578,28 +581,28 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         Prints 'Test Done' in a decorative big ASCII style using *, -, and #.
         """
         # Print a completion banner to indicate the end of a TestFlow run
-        log_print_panner(r"""
+        log_print_panner(Fore.GREEN +r"""
 ████████╗███████╗███████╗████████╗     ██████╗   ██████╗ ███╗   ██╗███████╗
 ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝
    ██║   █████╗  ███████╗   ██║        ██║   ██║██║   ██║██╔██╗ ██║█████╗  
    ██║   ██╔══╝  ╚════██║   ██║        ██║   ██║██║   ██║██║╚██╗██║██╔══╝  
    ██║   ███████╗███████║   ██║        ██████ ╔╝╚██████╔╝██║ ╚████║███████╗
    ╚═╝   ╚══════╝╚══════╝   ╚═╝          ╚════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝
-            """)
+            """+ Style.RESET_ALL)
 
     def print_big_teststopped_banner():
         """
         Prints 'Test Stopped' in a decorative big ASCII style using *, -, and #.
         """
         # Print a banner to indicate the test was stopped manually or by error
-        log_print_panner(r"""
+        log_print_panner(Fore.RED +r"""
     ████████╗███████╗███████╗████████╗     ███████╗████████╗ ██████╗ ██████╗ ██████╗ ███████╗██████╗  
     ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝     ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔══██╗██╔════╝██╔═══██╗
        ██║   █████╗  ███████╗   ██║        ███████╗   ██║   ██║   ██║██████╔╝██████╔╝█████╗  ██║   ██║
        ██║   ██╔══╝  ╚════██║   ██║        ╚════██║   ██║   ██║   ██║██╔══   ██╔══   ██╔══╝  ██║   ██║
        ██║   ███████╗███████║   ██║        ███████║   ██║   ╚██████╔╝██║     ██║     ███████╗██████ ╔╝
        ╚═╝   ╚══════╝╚══════╝   ╚═╝        ╚══════╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝     ╚══════╝  ╚════╝
-            """)
+            """+ Style.RESET_ALL)
 
 
     def parse_node_line(line: str) -> dict:
@@ -646,7 +649,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
         except Exception as e:
             # Non-fatal: log parse errors and return defaults
-            log_print(f"Error parsing node line: {e}")
+            log_print(f"\033[31mError parsing node line: {e}\033[0m")
 
         return result
 
@@ -883,17 +886,17 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     return list(csv.reader(f))
 
             except PermissionError:
-                print(f"[Warning] File is open or locked. Cannot read yet: {os.path.basename(file_path)}")
-                print(f"Retrying in {delay} seconds... (attempt {attempt}/{retries})")
+                print(f"\033[31m[Warning] File is open or locked. Cannot read yet: {os.path.basename(file_path)}\033[0m")
+                print(f"\033[31mRetrying in {delay} seconds... (attempt {attempt}/{retries})\033[0m")
                 time.sleep(delay)
 
             except Exception as e:
-                print(f"[Error] Unexpected error reading file: {e}")
+                print(f"\033[31m[Error] Unexpected error reading file: {e}\033[0m")
                 raise e
 
         # If we exhausted all retries
         raise PermissionError(
-            f"Could not read '{file_path}' because it remained locked after {retries} attempts."
+            f"\033[31mCould not read '{file_path}' because it remained locked after {retries} attempts.\033[0m"
         )
         
     def safe_write_csv(file_path, rows, retries=100, delay=1):
@@ -934,11 +937,11 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                         os.remove(temp_path)
                     except:
                         pass
-                print(f"[Error] Unexpected write error: {e}")
+                print(f"\033[31m[Error] Unexpected write error: {e}\033[0m")
                 raise
 
         raise PermissionError(
-            f"Could not write to '{file_path}' — it remained locked after {retries} retries."
+            f"\033[31mCould not write to '{file_path}' — it remained locked after {retries} retries.\033[0m"
         )
     
     def update_csv_cell(file_path: str, row_index: int, column, value):
@@ -1008,12 +1011,15 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         
         # Create progress prefix
         progress_prefix = f"[PROGRESS:{progress_percent:3d}%|{_CURRENT_STEP:4d}/{_TOTAL_STEPS:4d}] "
-        
+
+        # Wrap the prefix in green
+        green_prefix = f"\033[32m{progress_prefix}\033[0m"
+
         # Create the final message string like Python's built-in print()
         original_message = sep.join(str(arg) for arg in args)
-        message = progress_prefix + original_message + end
+        message = green_prefix + original_message + end
 
-        # Print directly to the console with encoding handling
+        # Print directly to the console
         try:
             sys.stdout.flush()
             print(message, end="")
@@ -1088,7 +1094,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
         except Exception as e:
             # If any error occurs during log saving, print error message.
-            log_print(f"[ERROR] Failed to save logs: {e}")
+            log_print(f"\033[31m[ERROR] Failed to save logs: {e}\033[0m")
 
 
     def send_to_read_byte(visa_address: str, query: str):
@@ -1106,7 +1112,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             instrument.close()
             return reply  # This is bytes (for image data)
         except Exception as e:
-            log_print(f"TestFlow says Error: {e}")
+            log_print(f"\033[31mTestFlow says Error: {e}\033[0m")
             return None
             
 
@@ -1250,7 +1256,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 return status
             return 'running'  # Default status if file doesn't exist
         except Exception as e:
-            log_print(f"Error reading status file: {e}")
+            log_print(f"\033[31mError reading status file: {e}\033[0m")
             return 'running'
 
     def wait_while_paused(output_path: str):
@@ -1265,7 +1271,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     with open(status_file, 'w') as f:
                         f.write('Running')
                 except Exception as e:
-                    log_print(f"Error updating status file: {e}")
+                    log_print(f"\033[31mError updating status file: {e}\033[0m")
                 break
 
             # Case 2: Script is already running → break immediately
@@ -1294,7 +1300,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 os.remove(status_file)
                 
         except Exception as e:
-            log_print(f"Error deleting status file: {e}")
+            log_print(f"\033[31mError deleting status file: {e}\033[0m")
 
 
 
@@ -2185,14 +2191,14 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         try:
             # Make sure '=' exists
             if '=' not in line:
-                print(f"[ERROR] No '=' found in line: {line!r}")
+                print(f"\033[31m[ERROR] No '=' found in line: {line!r}\033[0m")
                 sys.exit(1)
 
             # Take everything after the FIRST '='
             expr = line.split('=', 1)[1].strip()
 
             if not expr:
-                print(f"[ERROR] No expression found after '=' in line: {line!r}")
+                print(f"\033[31m[ERROR] No expression found after '=' in line: {line!r}\033[0m")
                 sys.exit(1)
 
             # Simple / unsafe eval: only if you trust the input!
@@ -2200,11 +2206,11 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             return result
 
         except SyntaxError as e:
-            print(f"[ERROR] Invalid expression syntax after '=': {e}")
+            print(f"\033[31m[ERROR] Invalid expression syntax after '=': {e}\033[0m")
             sys.exit(1)
 
         except Exception as e:
-            print(f"[ERROR] Failed to evaluate expression after '=': {e}")
+            print(f"\033[31m[ERROR] Failed to evaluate expression after '=': {e}\033[0m")
             sys.exit(1)
 
 
@@ -2221,12 +2227,12 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         # Look for pattern: ${...} followed by optional spaces then '='
         match = re.search(r'\$\{([^}]+)\}\s*=', line)
         if not match:
-            print(f"[ERROR] No variable of form '${{var}}=' found in line: {line!r}")
+            print(f"\033[31m[ERROR] No variable of form '${{var}}=' found in line: {line!r}\033[0m")
             sys.exit(1)
 
         var_name = match.group(1).strip()
         if not var_name:
-            print(f"[ERROR] Empty variable name between '${{}}' before '=' in line: {line!r}")
+            print(f"\033[31m[ERROR] Empty variable name between '${{}}' before '=' in line: {line!r}\033[0m")
             sys.exit(1)
 
         return var_name
@@ -2239,7 +2245,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         """
         match = re.fullmatch(r'\s*\$\{([^}]+)\}\s*', text)
         if not match:
-            print(f"[ERROR] Invalid variable format (expected '${{var}}'): {text!r}")
+            print(f"\033[31m[ERROR] Invalid variable format (expected '${{var}}'): {text!r}\033[0m")
             sys.exit(1)
 
         return match.group(1).strip()
@@ -2385,7 +2391,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                         Current_line=read_line_from_script(script_location, loop_end_line) 
                         after_loop = get_next_from_loop_end_line(Current_line)
                         #print("After loop is ",after_loop)
-                        log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","████████████████████████████████████████████████ Loop ",node_id," ended", this_loop_total_iteration, " iterations")
+                        log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","\033[32m████████████████████████████████████████████████\033[0m Loop ",node_id," ended", this_loop_total_iteration, " iterations")
                         if not after_loop== "X":
                             next_type = after_loop["next"]["type"]  
                             next_num  = int(after_loop["next"]["id"])
@@ -2408,7 +2414,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                            break
                             
                     #log_print("======= LOOP ",this_loop_n," => Iteration= ",this_loop_current_iteration, " ======Next is: ",next_node.get("type"),next_node.get("id"),"=======")
-                    log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","████████████████████████ LOOP ",this_loop_n," => Iteration= ",this_loop_current_iteration,"████████████████████████")
+                    log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","\033[33m████████████████████████ LOOP ",this_loop_n," => Iteration= ",this_loop_current_iteration,"████████████████████████\033[0m")
                     # Define open loop and update CSV.
                     loop_column_name=f"Loop({node_id})"
                     update_csv_cell(outpath,Data_line,"N",Data_line)
@@ -2680,7 +2686,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
     # *******************************************************************************************************************************
     
     if not os.path.exists(script_path):
-        print(f"Error: Script file does not exist: {script_path}")
+        print(f"\033[31mError: Script file does not exist: {script_path}\033[0m")
         # or: raise FileNotFoundError(f"Script file does not exist: {script_path}")
         return
 
@@ -2688,7 +2694,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         try:
             os.makedirs(output_path, exist_ok=True)
         except Exception as e:
-            print(f"Error: Cannot create output directory: {e}")
+            print(f"\033[31mError: Cannot create output directory: {e}\033[0m")
             # or: raise
             return
 
