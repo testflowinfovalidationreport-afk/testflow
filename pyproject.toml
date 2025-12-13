@@ -17,9 +17,9 @@ license = { text = "TCL" }
 dependencies = [
   "pyvisa",
   "pyserial"
-  "colorama"
 ]
 
 [tool.setuptools]
 packages = ["testflow"]
+
 
