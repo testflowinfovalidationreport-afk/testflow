@@ -13,11 +13,13 @@ authors = [
 ]
 license = { text = "TCL" }
 
-# 👇 All non-standard-library dependencies go here
+# All non-standard-library dependencies go here
 dependencies = [
   "pyvisa",
   "pyserial"
+  "colorama"
 ]
 
 [tool.setuptools]
 packages = ["testflow"]
+
