@@ -1,4 +1,4 @@
-    #Version:1.1.0
+    #Version:1.1.1
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -959,7 +959,9 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         if isinstance(column, str):
             header = reader[0]
             if column not in header:
-                raise ValueError(f"Column '{column}' not found in CSV.")
+                header.append(column)
+                #raise ValueError(f"Column '{column}' not found in CSV.")
+                
             col_index = header.index(column)
         else:
             col_index = int(column)
@@ -2706,5 +2708,4 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
     final_step = 100
     final_total_steps = compute_loop_weight(script_path)
         
-
 
