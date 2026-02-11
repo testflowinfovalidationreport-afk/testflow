@@ -1,4 +1,4 @@
-    #Version:1.1.1
+    #Version:1.1.2
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -948,6 +948,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         """
         Updates a specific cell in a CSV file by row and column.
         """
+        column = _sanitize_title(column)
         # Ensure the CSV file exists
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"CSV file not found: {file_path}")
@@ -959,9 +960,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         if isinstance(column, str):
             header = reader[0]
             if column not in header:
-                header.append(column)
-                #raise ValueError(f"Column '{column}' not found in CSV.")
-                
+                raise ValueError(f"Column '{column}' not found in CSV.")
             col_index = header.index(column)
         else:
             col_index = int(column)
