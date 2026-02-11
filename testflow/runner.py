@@ -1,4 +1,4 @@
-    #Version:1.1.2
+    #Version:1.1.3
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -720,7 +720,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             nonlocal current_node, current_action_title, action_has_query, action_command_types
             if current_node is not None and current_action_title and action_has_query:
                 # Sanitize title and form column like '<Title>(N<node>|A<idx>)'
-                safe_title = _sanitize_title(current_action_title)
+                safe_title = (current_action_title)
                 
                 # Check what types of commands this action has
                 base_col_name = f"{safe_title}(N{current_node}|A{action_index_per_node[current_node]})"
@@ -948,7 +948,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         """
         Updates a specific cell in a CSV file by row and column.
         """
-        column = _sanitize_title(column)
+        column = (column)
         # Ensure the CSV file exists
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"CSV file not found: {file_path}")
