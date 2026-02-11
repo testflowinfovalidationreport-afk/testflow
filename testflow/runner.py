@@ -1,4 +1,4 @@
-    #Version:1.1.4
+    #Version:1.1.5
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -61,7 +61,9 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             instrument.write(command)
             instrument.close()
         except Exception as e:
-            log_print(f"\033[31mTestFlow says Error: {e}\033[0m")
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            log_print(f"[ {timestamp} ]: \033[31mTestFlow says Error: {e}\033[0m")
+            
 
 
     def send_scpi_query(visa_address: str, query: str):
@@ -76,7 +78,8 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             instrument.close()
             return reply_stripped
         except Exception as e:
-            log_print(f"\033[31mTestFlow says Error: {e}\033[0m")
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            log_print(f"[ {timestamp} ]: \033[31mTestFlow says Error: {e}\033[0m")
             return None
 
 
@@ -91,7 +94,8 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 ser.write((command.strip() + '\r\n').encode())
                 time.sleep(0.1)  # Small delay for processing
         except Exception as e:
-            log_print(f"\033[31mTestFlow says Error: {e}\033[0m")
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            log_print(f"[ {timestamp} ]: \033[31mTestFlow says Error: {e}\033[0m")
 
 
     def send_serial_query(serial_port: str, query: str):
@@ -106,7 +110,8 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 reply = ser.read_all().decode(errors='ignore')
                 return reply.strip()
         except Exception as e:
-            log_print(f"\033[31mTestFlow says Error: {e}\033[0m")
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            log_print(f"[ {timestamp} ]: \033[31mTestFlow says Error: {e}\033[0m")
             return None
 
 
@@ -1103,7 +1108,8 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             instrument.close()
             return reply  # This is bytes (for image data)
         except Exception as e:
-            log_print(f"\033[31mTestFlow says Error: {e}\033[0m")
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            log_print(f"[ {timestamp} ]: \033[31mTestFlow says Error: {e}\033[0m")
             return None
             
 
