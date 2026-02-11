@@ -1,4 +1,4 @@
-    #Version:1.1.3
+    #Version:1.1.4
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -654,16 +654,6 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         return result
 
 
-    def _sanitize_title(s: str) -> str:
-        """Make action titles safer for CSV headers (remove spaces/commas etc.)."""
-        # Strip outer whitespace
-        s = s.strip()
-        # Replace internal whitespace sequences with underscores for compact headers
-        s = re.sub(r"\s+", "_", s)
-        # Remove any non word/hyphen characters to avoid CSV header issues
-        s = re.sub(r"[^\w\-]+", "", s)  # keep letters, digits, underscore, hyphen
-        return s
-
 
     def build_csv_headers_from_script(script_path: str) -> list[str]:
         """
@@ -948,7 +938,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         """
         Updates a specific cell in a CSV file by row and column.
         """
-        column = (column)
+        
         # Ensure the CSV file exists
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"CSV file not found: {file_path}")
@@ -2642,6 +2632,9 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 current_node = script_obj["loops"].setdefault(lid, {})
                 current_node["current_iteration"] = int(current_node.get("current_iteration", 0)) + 1
                 #log_print("======= LOOP", node_id, "======= Finished iteration ", current_node["current_iteration"]-1)
+                # Write timestamp and data line index to CSV, then advance line counter.
+                update_csv_cell(outpath,Data_line,"Date",datetime.now().strftime("%Y-%m-%d"))
+                update_csv_cell(outpath,Data_line,"Time",datetime.now().strftime("%H:%M:%S"))
                 Data_line=Data_line+1
             elif just_ended_loop:
                 log_print("Loop ended and goint to:       ",current_node, )
