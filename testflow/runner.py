@@ -1,4 +1,4 @@
-    #Version:1.1.7
+    #Version:1.1.8
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -1623,22 +1623,6 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
     # classify_script_line_at("/path/to/script.atoms", 34)  # case-insensitive by default
 
 
-    def write_status(output_path, status):
-        """
-        Writes the current status (Running, Pause, Resume, Stop) to a status.txt file
-        in the same folder as output_path. Auto-creates the directory if needed.
-        """
-        out_dir = os.path.dirname(os.path.abspath(output_path))
-        os.makedirs(out_dir, exist_ok=True)  # Auto-create directory if missing
-        status_file = os.path.join(out_dir, 'status.txt')
-
-        with open(status_file, 'w', encoding='utf-8') as f:
-            f.write(status)
-            
-        #log_print ("[INFO] control file is ",status_file )
-
-
-
     def get_next_from_loop_end_line(line: str, case_sensitive: bool = False) -> Optional[Dict[str, Any]]:
         """
         Parse a line like:
@@ -2578,12 +2562,12 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     time.sleep(delay_time)                    
 
                 elif check_line_prefix(Current_line, "MESSAGE:"):
-                    #print("I am here")
                     message_is =extract_prefixed_line(Current_line, "MESSAGE:")
-                    write_status(f"{output_location}status.txt","pause")
+                    #write_status(f"{output_location}\status.txt","Pause")
                     # Check for pause/stop commands
                     status = check_status_file(output_location)
                     log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Test paused with message: ", message_is)
+                    statusx=input()
                     script_line=script_line+1
 
                 elif check_line_prefix(Current_line, "Work_flow:"):
