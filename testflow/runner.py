@@ -1,4 +1,4 @@
-    #Version:1.1.6
+    #Version:1.1.7
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -519,6 +519,19 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         return match.group(1) if match else None
 
 
+    def get_action_data_name(line: str) -> Optional[str]:
+        """
+        Extracts data name from:
+        #ACTION: (<action title>,<data name>)
+        """
+        match = re.match(
+            r"#ACTION:\s*\(\s*[^,]+\s*,\s*([^)]+)\s*\)",
+            line.strip(),
+            re.IGNORECASE
+        )
+        return match.group(1).strip() if match else None
+    
+    
     def get_delay_in_ms(line: str) -> int:
         """Parses 'DELAY: x,unit' into milliseconds."""
         try:
@@ -764,7 +777,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     _flush_action_column()
 
                 in_action = True
-                current_action_title = m_act.group(1).strip()
+                current_action_title = get_action_data_name(s)
                 action_has_query = False
                 action_command_types.clear()  # Reset command types for new action
                 # Increment the action count for this node to tag columns uniquely
@@ -2331,7 +2344,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         action_count=0
         while(running_script):
             script_line= current_node.get("start")
-            last_line= current_node.get("end")  
+            last_line= current_node.get("end")
             # Check for pause/stop commands
             status = check_status_file(output_location) 
             if status == 'pause':
@@ -2441,7 +2454,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 elif check_line_prefix(Current_line, "#ACTION:"):
                     # Start of an action block. Parse and log action.
                     action_count=action_count+1
-                    current_action=get_action_title(Current_line)
+                    current_action=get_action_data_name(Current_line)
                     log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:     [",action_count,"]Action: ", current_action)  
                     if current_action=="Math":
                         script_line=script_line+1
@@ -2706,5 +2719,4 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
     final_step = 100
     final_total_steps = compute_loop_weight(script_path)
         
-
 
