@@ -1,4 +1,4 @@
-    #Version:1.2.0
+    #Version:1.2.1
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -2268,6 +2268,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
     
     def run_script_new(script_location: str, output_location: str, temp_csv: bool= False,debug_mode: bool=False):
         new_dir_name = Path(script_location).stem + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        runner_control=output_location
         output_location=create_out_directory(output_location,new_dir_name)
         # Print a large TestFlow banner at the start of execution.
         if not temp_csv:
@@ -2297,7 +2298,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         INST_VISA=""
         current_action=""
         write_status(fr"{output_location}\status.txt","Running")
-        status = check_status_file(output_location)
+        status = check_status_file(runner_control)
         #log_print("                File is ",status)
         # Create the CSV file for results, and extract header map.
 
@@ -2341,10 +2342,10 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             script_line= current_node.get("start")
             last_line= current_node.get("end")
             # Check for pause/stop commands
-            status = check_status_file(output_location) 
+            status = check_status_file(runner_control) 
             if status == 'pause':
                 log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution paused by user")
-                wait_while_paused(output_location)
+                wait_while_paused(runner_control)
                 log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution resumed")
             elif status == 'stop':
                 log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution stopped by user")
@@ -2534,10 +2535,10 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     # End of node block.
                     #log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","END_NODE[",node_info['node_number'],"]")
                                 # Check for pause/stop commands
-                    status = check_status_file(output_location) 
+                    status = check_status_file(runner_control) 
                     if status == 'pause':
                         log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution paused by user")
-                        wait_while_paused(output_location)
+                        wait_while_paused(runner_control)
                         log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution resumed")
                     elif status == 'stop':
                         break 
@@ -2545,7 +2546,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     if debug_mode:
                         show_debug_message(f'Degug mode::: Node[", {node_info['node_number']}] ,{node_info['node_type']}.........Press Enter to continue')
                 elif check_line_prefix(Current_line, "Loop_end"):
-                    #wait_while_paused(output_location)
+                    #wait_while_paused(runner_control)
                     # End of loop block; update iteration, possibly repeat, and log.
                     if write_flag==1 :
                         # Write timestamp and data line index to CSV, then advance line counter.
@@ -2574,9 +2575,9 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
                 elif check_line_prefix(Current_line, "MESSAGE:"):
                     message_is =extract_prefixed_line(Current_line, "MESSAGE:")
-                    #write_status(f"{output_location}\status.txt","Pause")
+                    #write_status(f"{runner_control}\status.txt","Pause")
                     # Check for pause/stop commands
-                    status = check_status_file(output_location)
+                    status = check_status_file(runner_control)
                     log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Test paused with message: ", message_is)
                     statusx=input()
                     script_line=script_line+1
@@ -2636,7 +2637,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             if not running_script:
                 break    
             #else:
-                #wait_while_paused(output_location)
+                #wait_while_paused(runner_control)
                 
                 
             script_line= next_node.get("line")
