@@ -1,4 +1,4 @@
-    #Version:1.2.2
+    #Version:1.2.3
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -2575,11 +2575,11 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
                 elif check_line_prefix(Current_line, "MESSAGE:"):
                     message_is =extract_prefixed_line(Current_line, "MESSAGE:")
-                    #write_status(f"{runner_control}\status.txt","Pause")
+                    write_status(f"{runner_control}\status.txt","Pause")
                     # Check for pause/stop commands
-                    status = check_status_file(runner_control)
-                    log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Test paused with message: ", message_is)
-                    statusx=input()
+                    log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Test paused with message: ", message_is ,"Once ready click Resume")
+                    wait_while_paused(runner_control)
+                    #statusx=input()
                     script_line=script_line+1
 
                 elif check_line_prefix(Current_line, "Work_flow:"):
