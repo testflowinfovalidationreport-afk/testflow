@@ -1,4 +1,4 @@
-    #Version:1.2.1
+    #Version:1.2.2
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -2297,7 +2297,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         node_id = 1
         INST_VISA=""
         current_action=""
-        write_status(fr"{output_location}\status.txt","Running")
+        write_status(fr"{runner_control}\status.txt","Running")
         status = check_status_file(runner_control)
         #log_print("                File is ",status)
         # Create the CSV file for results, and extract header map.
@@ -2680,7 +2680,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         # Save logs to file.
         log_file=f"{output_location}/{file_name}.log"
         save_all_logs(log_file)
-        delete_status_file(output_location)
+        delete_status_file(runner_control)
         
         if temp_csv:   
             return file_name
