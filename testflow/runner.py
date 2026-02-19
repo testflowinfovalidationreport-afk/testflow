@@ -1,4 +1,4 @@
-    #Version:1.1.8
+    #Version:1.1.9
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -14,6 +14,14 @@
     #================================================================================
     
 
+# Add local libs folder
+base_dir = Path(__file__).parent
+libs_dir = base_dir / "libs"
+
+if str(libs_dir) not in sys.path:
+    sys.path.insert(0, str(libs_dir))
+
+#external packages load from ./libs
 import pyvisa
 import serial
 import re
@@ -2703,4 +2711,3 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
     final_step = 100
     final_total_steps = compute_loop_weight(script_path)
         
-
