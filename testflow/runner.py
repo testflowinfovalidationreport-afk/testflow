@@ -1,4 +1,4 @@
-    #Version:1.1.9
+    #Version:1.2.0
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -14,16 +14,6 @@
     #================================================================================
     
 
-# Add local libs folder
-base_dir = Path(__file__).parent
-libs_dir = base_dir / "libs"
-
-if str(libs_dir) not in sys.path:
-    sys.path.insert(0, str(libs_dir))
-
-#external packages load from ./libs
-import pyvisa
-import serial
 import re
 import time
 import sys
@@ -37,6 +27,19 @@ import json
 from datetime import datetime
 from typing import Dict, List, Any
 from typing import Optional, Dict, Any
+
+
+
+# Add local libs folder
+base_dir = Path(__file__).parent
+libs_dir = base_dir / "libs"
+
+if str(libs_dir) not in sys.path:
+    sys.path.insert(0, str(libs_dir))
+
+#external packages load from ./libs
+import pyvisa
+import serial
 
 
 # Global variables for progress tracking
@@ -2293,7 +2296,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         node_id = 1
         INST_VISA=""
         current_action=""
-        write_status(f"{output_location}\status.txt","Running")
+        write_status(fr"{output_location}\status.txt","Running")
         status = check_status_file(output_location)
         #log_print("                File is ",status)
         # Create the CSV file for results, and extract header map.
