@@ -1,4 +1,4 @@
-    #Version:1.2.4
+    #Version:1.2.5
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -2543,8 +2543,8 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     elif status == 'stop':
                         break 
                         
-                    if debug_mode:
-                        show_debug_message(f'Degug mode::: Node[", {node_info['node_number']}] ,{node_info['node_type']}.........Press Enter to continue')
+                    #if debug_mode:
+                    #    show_debug_message(f'Degug mode::: Node[", {node_info['node_number']}] ,{node_info['node_type']}.........Press Enter to continue')
                 elif check_line_prefix(Current_line, "Loop_end"):
                     #wait_while_paused(runner_control)
                     # End of loop block; update iteration, possibly repeat, and log.
@@ -2715,4 +2715,3 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
     final_step = 100
     final_total_steps = compute_loop_weight(script_path)
         
-
