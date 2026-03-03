@@ -1,4 +1,4 @@
-    #Version:1.2.5
+    #Version:1.2.6
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -27,7 +27,7 @@ import json
 from datetime import datetime
 from typing import Dict, List, Any
 from typing import Optional, Dict, Any
-
+import msvcrt  # Windows only
 
 
 # Add local libs folder
@@ -1280,33 +1280,68 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             log_print(f"\033[31mError reading status file: {e}\033[0m")
             return 'running'
 
-    def wait_while_paused(output_path: str):
-        """Wait while the script is paused, checking status periodically."""
-        while True:
-            status = check_status_file(output_path)
 
-            # Case 1: Resume the script
-            if status == 'resume':
-                try:
-                    status_file = os.path.join(output_path, 'status.txt')
-                    with open(status_file, 'w') as f:
-                        f.write('Running')
-                except Exception as e:
-                    log_print(f"\033[31mError updating status file: {e}\033[0m")
-                break
 
-            # Case 2: Script is already running → break immediately
-            elif status == 'Running':
-                break
 
-            # Case 3: Stop execution
-            elif status == 'stop':
-                log_print("Script execution stopped by user")
-                sys.exit(0)
+def wait_while_paused(output_path: str):
+    """Wait while the script is paused.
+    Resume if:
+      - status file becomes 'resume'
+      - user presses any key in terminal
+    Stop if:
+      - status becomes 'stop'
+    """
 
-            # Otherwise (pause or anything else) → wait and check again
-            time.sleep(1)
+    status_file = os.path.join(output_path, 'status.txt')
 
+    log_print("Paused. Waiting for 'resume' in file OR any key press...")
+
+    while True:
+        # 1️⃣ Check for keyboard press (instant resume)
+        if msvcrt.kbhit():
+            msvcrt.getch()  # clear buffer
+            log_print("Key press detected → Resuming execution")
+
+            try:
+                with open(status_file, 'w') as f:
+                    f.write('Running')
+            except Exception as e:
+                log_print(f"\033[31mError updating status file: {e}\033[0m")
+
+            break
+
+        # 2️⃣ Check status file
+        status = check_status_file(output_path)
+
+        if status is None:
+            time.sleep(0.5)
+            continue
+
+        status = status.lower()
+
+        # Case 1: Resume from file
+        if status == 'resume':
+            log_print("Resume detected in status file")
+
+            try:
+                with open(status_file, 'w') as f:
+                    f.write('Running')
+            except Exception as e:
+                log_print(f"\033[31mError updating status file: {e}\033[0m")
+
+            break
+
+        # Case 2: Already running
+        elif status == 'running':
+            break
+
+        # Case 3: Stop execution
+        elif status == 'stop':
+            log_print("Script execution stopped by user")
+            sys.exit(0)
+
+        # Otherwise stay paused
+        time.sleep(0.5)
 
 
     def delete_status_file(output_path):
