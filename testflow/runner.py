@@ -1,4 +1,4 @@
-    #Version:1.2.7
+    #Version:1.2.8
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -27,7 +27,7 @@ import json
 from datetime import datetime
 from typing import Dict, List, Any
 from typing import Optional, Dict, Any
-
+import msvcrt  # Windows only
 
 
 # Add local libs folder
@@ -1303,6 +1303,16 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             elif status == 'stop':
                 log_print("Script execution stopped by user")
                 sys.exit(0)
+			
+            elif msvcrt.kbhit():
+                msvcrt.getch()  # clear key buffer
+                try:
+                    status_file = os.path.join(output_path, 'status.txt')
+                    with open(status_file, 'w') as f:
+                        f.write('Running')
+                except Exception as e:
+                    log_print(f"\033[31mError updating status file: {e}\033[0m")  
+                break
 
             # Otherwise (pause or anything else) → wait and check again
             time.sleep(1)
