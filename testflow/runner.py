@@ -1,4 +1,4 @@
-    #Version:1.2.8
+    #Version:1.2.9
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -855,13 +855,13 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         """
         # Check if path is a directory-like input
         is_dir_like = os.path.isdir(file_path) or file_path.endswith(os.sep)
-
+        file_name = Path(script_path).stem
         if is_dir_like:
             # Generate default filename with timestamp
             now_str = datetime.now().strftime("%Y-%m-%d_%H%M")
             base_name = f"Out{now_str}.csv"
             if temp_csv:
-                base_name = f"temp_{base_name}"
+                base_name = f"{file_name}_{base_name}"
             file_path = os.path.join(file_path, base_name)
         else:
             # Caller passed a full file path; optionally prefix basename with 'temp'
@@ -869,8 +869,8 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                 dir_name = os.path.dirname(file_path) or "."
                 base_name = os.path.basename(file_path)
                 # Avoid double-prefixing
-                if not base_name.startswith("temp"):
-                    base_name = f"temp{base_name}"
+                if not base_name.startswith("{file_name}"):
+                    base_name = f"{file_name}_{base_name}"
                 file_path = os.path.join(dir_name, base_name)
 
         # Ensure the directory for the file exists
@@ -1970,14 +1970,15 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         match = re.search(pattern, line)
         if match:
             return match.group(1)
+             
         return None
 
 
     # *******************************************************************************************************************************
     def run_another_workflow(sub_script_location: str, sub_output_location: str, temp_csv= False):
-        tempfile= run_script_new(sub_script_location, sub_output_location,True)
+        tempfile, temp_out_location= run_script_new(sub_script_location, sub_output_location,True)
         log_print("Ended a workflow, file is =", tempfile)
-        return tempfile
+        return tempfile, temp_out_location
 
 
 
@@ -2597,22 +2598,27 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     wf_name= extract_workflow_name(Current_line)
                     next_workflow= workflows_obi["workflows"][wf_name][0]
                     next_workflow_script= next_workflow.get(str("lines"))
-                    next_workflow_path=(f"{output_location}{wf_name}.atoms")
+                    temp_script_location= Path(script_location).parent
+                    #print(temp_script_location)
+                    #input()
+                    next_workflow_path=(f"{temp_script_location}\{wf_name}.atoms")
                     create_subworkflow(next_workflow_script,next_workflow_path)
                     log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Going to another workflow: ", wf_name, " at : ", next_workflow_path)
-                    #print(json.dumps(next_workflow, indent=2))
+                    print(json.dumps(next_workflow, indent=2))
+                    #input()
                     separator=f"************************************************************ Starting script {wf_name} ************************************************************"
                     Data_line=Data_line+2
                     write_text_to_row_first_col(outpath,Data_line,separator)
-                    temp_wf_csv= run_another_workflow(next_workflow_path,output_location,Data_line)
-                    temp_log=f"{output_location}{temp_wf_csv}.log"
-                    temp_wf_csv=f"{output_location}{temp_wf_csv}.csv"
+                    temp_wf_csv, temp_o_location= run_another_workflow(next_workflow_path,output_location,Data_line)
+                    temp_log=f"{temp_o_location}{temp_wf_csv}.log"
+                    temp_wf_csv=f"{temp_o_location}\{temp_wf_csv}.csv"
+                    print("Debugger: ",temp_wf_csv,"    ", temp_log,"    ", temp_wf_csv)
                     Data_line= concat_csv_into_second(temp_wf_csv, outpath)-1
                     #separator=f"************************************************************ Ended script {wf_name} ************************************************************"
-                    #write_text_to_row_first_col(outpath,Data_line+2,separator)
+                    write_text_to_row_first_col(outpath,Data_line+2,separator)
                     script_line=script_line+1
-                    delete_csv_file(temp_wf_csv)
-                    delete_csv_file(temp_log)
+                    #delete_csv_file(temp_wf_csv)
+                    #delete_csv_file(temp_log)
                     script_obj = parse_script_structured_v6(script_location)
                     current_node = script_obj["nodes"].get(str(node_id), {})   
                     next_node= current_node.get("next")
@@ -2693,7 +2699,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         delete_status_file(runner_control)
         
         if temp_csv:   
-            return file_name
+            return file_name, output_location
         else:
             return 0
             
