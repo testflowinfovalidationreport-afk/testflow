@@ -2601,7 +2601,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     temp_script_location= Path(script_location).parent
                     #print(temp_script_location)
                     #input()
-                    next_workflow_path=(f"{temp_script_location}\{wf_name}.atoms")
+                    next_workflow_path=(fr"{temp_script_location}\{wf_name}.atoms")
                     create_subworkflow(next_workflow_script,next_workflow_path)
                     log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Going to another workflow: ", wf_name, " at : ", next_workflow_path)
                     #print(json.dumps(next_workflow, indent=2))
@@ -2611,7 +2611,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     write_text_to_row_first_col(outpath,Data_line,separator)
                     temp_wf_csv, temp_o_location= run_another_workflow(next_workflow_path,output_location,Data_line)
                     temp_log=f"{temp_o_location}{temp_wf_csv}.log"
-                    temp_wf_csv=f"{temp_o_location}\{temp_wf_csv}.csv"
+                    temp_wf_csv=fr"{temp_o_location}\{temp_wf_csv}.csv"
                     Data_line= concat_csv_into_second(temp_wf_csv, outpath)-1
                     #separator=f"************************************************************ Ended script {wf_name} ************************************************************"
                     write_text_to_row_first_col(outpath,Data_line+2,separator)
@@ -2730,3 +2730,4 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
     final_step = 100
     final_total_steps = compute_loop_weight(script_path)
         
+
