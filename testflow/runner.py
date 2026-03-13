@@ -1,4 +1,4 @@
-    #Version:1.3.4
+    #Version:1.3.5
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -2276,20 +2276,26 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         os.makedirs(out_dir, exist_ok=True)
         
         return out_dir
-		
-    def validate_and_fix_png(raw_data):
-        png_header = b'\x89PNG'
-		# Check if the data starts correctly
-		if raw_data.startswith(png_header):
+    def validate_and_fix_png(self, raw_data):
+            """
+            Checks if the data is a valid PNG. 
+            If it contains a SCPI binary header, it strips it.
+            """
+            png_header = b'\x89PNG'
+            
+            # Check if the data starts correctly
+            if raw_data.startswith(png_header):
+                return raw_data
+                
+            # Look for the PNG header elsewhere in the block
+            index = raw_data.find(png_header)
+            if index != -1:
+                print(f"Found PNG signature at index {index}. Stripping SCPI header.")
+                return raw_data[index:]
+                
+            # If not found, the data might be corrupted or not a PNG
+            print("Warning: Data does not appear to contain a valid PNG signature.")
             return raw_data
-        index = raw_data.find(png_header)
-        if index != -1:
-            print(f"Found PNG signature at index {index}. Stripping SCPI header.")
-            return raw_data[index:]
-        # If not found, the data might be corrupted or not a PNG
-        print("Warning: Data does not appear to contain a valid PNG signature.")
-        return raw_data
-	
 	
     def run_script_new(script_location: str, output_location: str, temp_csv: bool= False,debug_mode: bool=False):
         new_dir_name = Path(script_location).stem + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
