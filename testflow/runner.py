@@ -1,4 +1,4 @@
-    #Version:1.3.1
+    #Version:1.3.2
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -2278,10 +2278,6 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         return out_dir
 		
     def validate_and_fix_png(raw_data):
-    """
-    Checks if the data is a valid PNG. 
-		If it contains a SCPI binary header (e.g., #6260145), it strips it.
-		"""
 		# The standard PNG magic number in bytes
 		png_header = b'\x89PNG'
 		
