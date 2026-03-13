@@ -1,4 +1,4 @@
-    #Version:1.3.0
+    #Version:1.3.1
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -562,7 +562,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
             elif unit == "H":
                 return int(time_value * 60 * 60 * 1000)
             else:
-                log_print(f"⚠ Unknown unit '{unit}', assuming milliseconds.")
+                log_print(f"? Unknown unit '{unit}', assuming milliseconds.")
                 return int(time_value)
         except Exception as e:
             log_print(f"\033[31mError parsing delay line: {e}\033[0m")
@@ -578,12 +578,12 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         # Print TestFlow ASCII art banner and legal/info lines using the unified logger
         
         log_print_panner( Fore.GREEN +r"""
-████████╗███████╗███████╗████████╗      ███████╗██╗      ██████╗ ██╗    ██╗
-╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝      ██╔════╝██║     ██╔═══██╗██║    ██║
-   ██║   █████╗  ███████╗   ██║    ███  █████╗  ██║     ██║   ██║██║ █╗ ██║
-   ██║   ██╔══╝  ╚════██║   ██║         ██╔══╝  ██║     ██║   ██║██║███╗██║
-   ██║   ███████╗███████║   ██║         ██╗     ███████╗╚██████╔╝╚███╔███╔╝
-   ╚═╝   ╚══════╝╚══════╝   ╚═╝         ╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝ 
+¦¦¦¦¦¦¦¦+¦¦¦¦¦¦¦+¦¦¦¦¦¦¦+¦¦¦¦¦¦¦¦+      ¦¦¦¦¦¦¦+¦¦+      ¦¦¦¦¦¦+ ¦¦+    ¦¦+
++--¦¦+--+¦¦+----+¦¦+----++--¦¦+--+      ¦¦+----+¦¦¦     ¦¦+---¦¦+¦¦¦    ¦¦¦
+   ¦¦¦   ¦¦¦¦¦+  ¦¦¦¦¦¦¦+   ¦¦¦    ¦¦¦  ¦¦¦¦¦+  ¦¦¦     ¦¦¦   ¦¦¦¦¦¦ ¦+ ¦¦¦
+   ¦¦¦   ¦¦+--+  +----¦¦¦   ¦¦¦         ¦¦+--+  ¦¦¦     ¦¦¦   ¦¦¦¦¦¦¦¦¦+¦¦¦
+   ¦¦¦   ¦¦¦¦¦¦¦+¦¦¦¦¦¦¦¦   ¦¦¦         ¦¦+     ¦¦¦¦¦¦¦++¦¦¦¦¦¦+++¦¦¦+¦¦¦++
+   +-+   +------++------+   +-+         +-+     +------+ +-----+  +--++--+ 
         """+ Style.RESET_ALL)
         # Visual separators and centered disclaimer text
         log_print_panner(Fore.GREEN +"=" * 80)
@@ -611,12 +611,12 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         """
         # Print a completion banner to indicate the end of a TestFlow run
         log_print_panner(Fore.GREEN +r"""
-████████╗███████╗███████╗████████╗     ██████╗   ██████╗ ███╗   ██╗███████╗
-╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝
-   ██║   █████╗  ███████╗   ██║        ██║   ██║██║   ██║██╔██╗ ██║█████╗  
-   ██║   ██╔══╝  ╚════██║   ██║        ██║   ██║██║   ██║██║╚██╗██║██╔══╝  
-   ██║   ███████╗███████║   ██║        ██████ ╔╝╚██████╔╝██║ ╚████║███████╗
-   ╚═╝   ╚══════╝╚══════╝   ╚═╝          ╚════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝
+¦¦¦¦¦¦¦¦+¦¦¦¦¦¦¦+¦¦¦¦¦¦¦+¦¦¦¦¦¦¦¦+     ¦¦¦¦¦¦+   ¦¦¦¦¦¦+ ¦¦¦+   ¦¦+¦¦¦¦¦¦¦+
++--¦¦+--+¦¦+----+¦¦+----++--¦¦+--+     ¦¦+---¦¦+¦¦+---¦¦+¦¦¦¦+  ¦¦¦¦¦+----+
+   ¦¦¦   ¦¦¦¦¦+  ¦¦¦¦¦¦¦+   ¦¦¦        ¦¦¦   ¦¦¦¦¦¦   ¦¦¦¦¦+¦¦+ ¦¦¦¦¦¦¦¦+  
+   ¦¦¦   ¦¦+--+  +----¦¦¦   ¦¦¦        ¦¦¦   ¦¦¦¦¦¦   ¦¦¦¦¦¦+¦¦+¦¦¦¦¦+--+  
+   ¦¦¦   ¦¦¦¦¦¦¦+¦¦¦¦¦¦¦¦   ¦¦¦        ¦¦¦¦¦¦ +++¦¦¦¦¦¦++¦¦¦ +¦¦¦¦¦¦¦¦¦¦¦¦+
+   +-+   +------++------+   +-+          +----+  +-----+ +-+  +---++------+
             """+ Style.RESET_ALL)
 
     def print_big_teststopped_banner():
@@ -625,12 +625,12 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         """
         # Print a banner to indicate the test was stopped manually or by error
         log_print_panner(Fore.RED +r"""
-████████╗███████╗███████╗████████╗     ███████╗████████╗ ██████╗ ██████╗ ██████╗ ███████╗██████╗  
-╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝     ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔══██╗██╔════╝██╔═══██╗
-   ██║   █████╗  ███████╗   ██║        ███████╗   ██║   ██║   ██║██████╔╝██████╔╝█████╗  ██║   ██║
-   ██║   ██╔══╝  ╚════██║   ██║        ╚════██║   ██║   ██║   ██║██╔══   ██╔══   ██╔══╝  ██║   ██║
-   ██║   ███████╗███████║   ██║        ███████║   ██║   ╚██████╔╝██║     ██║     ███████╗██████ ╔╝
-   ╚═╝   ╚══════╝╚══════╝   ╚═╝        ╚══════╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝     ╚══════╝  ╚════╝
+¦¦¦¦¦¦¦¦+¦¦¦¦¦¦¦+¦¦¦¦¦¦¦+¦¦¦¦¦¦¦¦+     ¦¦¦¦¦¦¦+¦¦¦¦¦¦¦¦+ ¦¦¦¦¦¦+ ¦¦¦¦¦¦+ ¦¦¦¦¦¦+ ¦¦¦¦¦¦¦+¦¦¦¦¦¦+  
++--¦¦+--+¦¦+----+¦¦+----++--¦¦+--+     ¦¦+----++--¦¦+--+¦¦+---¦¦+¦¦+--¦¦+¦¦+--¦¦+¦¦+----+¦¦+---¦¦+
+   ¦¦¦   ¦¦¦¦¦+  ¦¦¦¦¦¦¦+   ¦¦¦        ¦¦¦¦¦¦¦+   ¦¦¦   ¦¦¦   ¦¦¦¦¦¦¦¦¦++¦¦¦¦¦¦++¦¦¦¦¦+  ¦¦¦   ¦¦¦
+   ¦¦¦   ¦¦+--+  +----¦¦¦   ¦¦¦        +----¦¦¦   ¦¦¦   ¦¦¦   ¦¦¦¦¦+--   ¦¦+--   ¦¦+--+  ¦¦¦   ¦¦¦
+   ¦¦¦   ¦¦¦¦¦¦¦+¦¦¦¦¦¦¦¦   ¦¦¦        ¦¦¦¦¦¦¦¦   ¦¦¦   +¦¦¦¦¦¦++¦¦¦     ¦¦¦     ¦¦¦¦¦¦¦+¦¦¦¦¦¦ ++
+   +-+   +------++------+   +-+        +------+   +-+    +-----+ +-+     +-+     +------+  +----+
             """+ Style.RESET_ALL)
 
 
@@ -1295,7 +1295,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     log_print(f"\033[31mError updating status file: {e}\033[0m")
                 break
 
-            # Case 2: Script is already running → break immediately
+            # Case 2: Script is already running ? break immediately
             elif status == 'Running':
                 break
 
@@ -1314,7 +1314,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     log_print(f"\033[31mError updating status file: {e}\033[0m")  
                 break
 
-            # Otherwise (pause or anything else) → wait and check again
+            # Otherwise (pause or anything else) ? wait and check again
             time.sleep(1)
 
 
@@ -1344,7 +1344,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
         START = norm("#START_SCRIPT")
         END   = norm("#END_SCRIPT")
-        WF    = norm("#START_WORKFLOW")  # ← NEW
+        WF    = norm("#START_WORKFLOW")  # ? NEW
 
         # Find START_SCRIPT
         start_idx = next((i for i, L in enumerate(nlines, start=1) if START in L), None)
@@ -1926,7 +1926,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     lines.insert(idx, insert_line)
                 break  # only act on the first occurrence
 
-        # If no '#START_WORKFLOW' found → append '#END_SCRIPT' at the end
+        # If no '#START_WORKFLOW' found ? append '#END_SCRIPT' at the end
         if not found_start:
             if not lines or lines[-1].strip() != insert_line:
                 lines.append(insert_line)
@@ -2276,7 +2276,30 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
         os.makedirs(out_dir, exist_ok=True)
         
         return out_dir
-    
+		
+    def validate_and_fix_png(raw_data):
+    """
+    Checks if the data is a valid PNG. 
+		If it contains a SCPI binary header (e.g., #6260145), it strips it.
+		"""
+		# The standard PNG magic number in bytes
+		png_header = b'\x89PNG'
+		
+		# Check if the data starts correctly
+		if raw_data.startswith(png_header):
+			return raw_data
+		
+		# Look for the PNG header elsewhere in the block (stripping SCPI header)
+		index = raw_data.find(png_header)
+		if index != -1:
+			print(f"Found PNG signature at index {index}. Stripping SCPI header.")
+			return raw_data[index:]
+		
+		# If not found, the data might be corrupted or not a PNG
+		print("Warning: Data does not appear to contain a valid PNG signature.")
+		return raw_data
+	
+	
     def run_script_new(script_location: str, output_location: str, temp_csv: bool= False,debug_mode: bool=False):
         new_dir_name = Path(script_location).stem + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         runner_control=output_location
@@ -2408,7 +2431,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                         Current_line=read_line_from_script(script_location, loop_end_line) 
                         after_loop = get_next_from_loop_end_line(Current_line)
                         #print("After loop is ",after_loop)
-                        log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","\033[32m████████████████████████████████████████████████\033[0m Loop ",node_id," ended", this_loop_total_iteration, " iterations")
+                        log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","\033[32m¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦\033[0m Loop ",node_id," ended", this_loop_total_iteration, " iterations")
                         if not after_loop== "X":
                             next_type = after_loop["next"]["type"]  
                             next_num  = int(after_loop["next"]["id"])
@@ -2431,7 +2454,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                            break
                             
                     #log_print("======= LOOP ",this_loop_n," => Iteration= ",this_loop_current_iteration, " ======Next is: ",next_node.get("type"),next_node.get("id"),"=======")
-                    log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","\033[33m████████████████████████ LOOP ",this_loop_n," => Iteration= ",this_loop_current_iteration,"████████████████████████\033[0m")
+                    log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","\033[33m¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦ LOOP ",this_loop_n," => Iteration= ",this_loop_current_iteration,"¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦\033[0m")
                     # Define open loop and update CSV.
                     loop_column_name=f"Loop({node_id})"
                     update_csv_cell(outpath,Data_line,"N",Data_line)
@@ -2524,8 +2547,9 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
                     image_name= f"image_{Data_line}"
                     image_path=create_unique_image_file(output_location,image_name)
                     image_data=send_to_read_byte(INST_VISA, command)
+                    fixed_image_data = validate_and_fix_png(image_data)
                     # Save the image data to file
-                    save_image_data(image_path, image_data)
+                    save_image_data(image_path, fixed_image_data)
                     action_column_title = f"{current_action}img(N{node_info['node_number']}|A{action_count})"
                     update_csv_cell(outpath,Data_line,action_column_title,image_path)
                     
@@ -2730,4 +2754,3 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
     final_step = 100
     final_total_steps = compute_loop_weight(script_path)
         
-
