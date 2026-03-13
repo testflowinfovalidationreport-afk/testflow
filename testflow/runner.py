@@ -1,4 +1,4 @@
-    #Version:1.3.2
+    #Version:1.3.3
     #================================================================================
     #                                   DISCLAIMER
     #================================================================================
@@ -2279,12 +2279,10 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		
     def validate_and_fix_png(raw_data):
 		# The standard PNG magic number in bytes
-		png_header = b'\x89PNG'
-		
+        png_header = b'\x89PNG'
 		# Check if the data starts correctly
 		if raw_data.startswith(png_header):
 			return raw_data
-		
 		# Look for the PNG header elsewhere in the block (stripping SCPI header)
 		index = raw_data.find(png_header)
 		if index != -1:
