@@ -1,4 +1,4 @@
-	#Version:1.3.6
+	#Version:1.3.8
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -318,6 +318,133 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		return variable_arrays
 
 	def replace_variables_with_current_values(line: str, variable_arrays: dict) -> str:
+			"""Handles Variables and CSV lookups. Always replaces with NULL and prints error if file is missing."""
+			if not isinstance(line, str):
+				return line
+
+			# 1. Handle standard variables first
+			var_matches = re.findall(r"\$\{([^}]+)\}", line)
+			for var_name in var_matches:
+				if var_name in variable_arrays:
+					current_value = variable_arrays[var_name].get('current_value', 'NULL')
+					pattern = re.compile(rf"\$\{{\s*{re.escape(var_name)}\s*\}}")
+					line = pattern.sub(str(current_value), line)
+
+			# 2. Handle CSV lookups
+			csv_matches = re.findall(r"<([^>]+)>\s*\{([\d\.]+)\}", line)
+			
+			for file_name, index_str in csv_matches:
+				base_dir = os.path.dirname(os.path.abspath(__file__))
+				file_path = os.path.join(base_dir, file_name)
+				replacement_value = "NULL"
+				index_valid = False
+
+				# Attempt to convert index
+				try:
+					index = int(float(index_str))
+					index_valid = True
+				except ValueError:
+					log_print(f" \033[33mWarning: Could not resolve index '{index_str}' to a number for {file_name}.\033[0m")
+
+				if index_valid:
+					# Check if file exists every time to ensure we print the error if it's missing
+					if not os.path.exists(file_path):
+						log_print(f" \033[41mError: CSV file '{file_name}' not found at {file_path}.\033[0m")
+						csv_cache[file_path] = None
+					else:
+						# Load into cache if not already present
+						if file_path not in csv_cache or csv_cache[file_path] is None:
+							try:
+								with open(file_path, mode='r', encoding='utf-8-sig') as f:
+									reader = list(csv.reader(f))
+									csv_cache[file_path] = [row[0] if len(row) > 0 else "" for row in reader]
+							except Exception as e:
+								log_print(f" \033[41mError reading CSV file '{file_name}': {e}\033[0m")
+								csv_cache[file_path] = None
+
+					# Retrieve Data Logic
+					file_data = csv_cache.get(file_path)
+					if file_data is not None:
+						if 0 <= index < len(file_data):
+							val = file_data[index]
+							if val and str(val).strip():
+								replacement_value = val
+							else:
+								log_print(f" \033[33mWarning: Empty cell at index {index} in '{file_name}'. Replacing with NULL.\033[0m")
+						else:
+							log_print(f" \033[41mError: Index {index} out of bounds for file '{file_name}'. Replacing with NULL.\033[0m")
+
+				# Apply replacement
+				pattern = re.compile(rf"<{re.escape(file_name)}>\s*\{{{re.escape(index_str)}\}}")
+				line = pattern.sub(str(replacement_value), line)
+			#print(line)
+			return line
+
+	def xxreplace_variables_with_current_values(line: str, variable_arrays: dict) -> str:
+			"""Handles Variables and CSV lookups. Always replaces with NULL if file/index is missing."""
+			if not isinstance(line, str):
+				return line
+
+			# 1. Handle standard variables first (${var})
+			var_matches = re.findall(r"\$\{([^}]+)\}", line)
+			for var_name in var_matches:
+				if var_name in variable_arrays:
+					current_value = variable_arrays[var_name].get('current_value', 'NULL')
+					pattern = re.compile(rf"\$\{{\s*{re.escape(var_name)}\s*\}}")
+					line = pattern.sub(str(current_value), line)
+
+			# 2. Handle CSV lookups (<file>{index})
+			# Matches both {81} and {81.0}
+			csv_matches = re.findall(r"<([^>]+)>\s*\{([\d\.]+)\}", line)
+			
+			for file_name, index_str in csv_matches:
+				base_dir = os.path.dirname(os.path.abspath(__file__))
+				file_path = os.path.join(base_dir, file_name)
+				replacement_value = "NULL"  # Start with NULL as default
+				
+				# Attempt to convert index
+				try:
+					index = int(float(index_str))
+					index_valid = True
+				except ValueError:
+					log_print(f" \033[33mWarning: Could not resolve index '{index_str}' to a number for {file_name}.\033[0m")
+					index_valid = False
+
+				if index_valid:
+					# Cache/Load Logic
+					if file_path not in csv_cache:
+						if os.path.exists(file_path):
+							try:
+								with open(file_path, mode='r', encoding='utf-8-sig') as f:
+									reader = list(csv.reader(f))
+									csv_cache[file_path] = [row[0] if len(row) > 0 else "" for row in reader]
+							except Exception as e:
+								log_print(f" \033[41mError reading CSV file '{file_name}': {e}\033[0m")
+								csv_cache[file_path] = None
+						else:
+							log_print(f" \033[41mError: CSV file '{file_name}' not found at {file_path}.\033[0m")
+							csv_cache[file_path] = None
+
+					# Retrieve Data Logic
+					file_data = csv_cache.get(file_path)
+					if file_data is not None:
+						if 0 <= index < len(file_data):
+							val = file_data[index]
+							if val and str(val).strip():
+								replacement_value = val
+							else:
+								log_print(f" \033[33mWarning: Empty cell at index {index} in '{file_name}'. Replacing with NULL.\033[0m")
+						else:
+							log_print(f" \033[41mError: Index {index} out of bounds for file '{file_name}'. Replacing with NULL.\033[0m")
+
+				# CRITICAL: This replacement MUST happen outside the if/else blocks 
+				# to ensure the <file>{index} tag is replaced with "NULL" if the file is missing.
+				pattern = re.compile(rf"<{re.escape(file_name)}>\s*\{{{re.escape(index_str)}\}}")
+				line = pattern.sub(str(replacement_value), line)
+			print(line)
+			return line
+
+	def xxreplace_variables_with_current_values(line: str, variable_arrays: dict) -> str:
 			"""Handles lines with Variables ONLY, CSV ONLY, or BOTH (AND)."""
 			if not isinstance(line, str):
 				return line
