@@ -1,4 +1,4 @@
-	#Version:1.3.8
+	#Version:1.3.9
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -2461,7 +2461,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		os.makedirs(out_dir, exist_ok=True)
 		
 		return out_dir
-	def validate_and_fix_png(self, raw_data):
+	def validate_and_fix_png(raw_data):
 			"""
 			Checks if the data is a valid PNG. 
 			If it contains a SCPI binary header, it strips it.
