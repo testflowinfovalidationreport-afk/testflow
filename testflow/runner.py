@@ -1,4 +1,4 @@
-	#Version:2.0.0
+	#Version:2.0.1
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -2644,9 +2644,14 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		variables = get_all_variable_arrays(script_location,script_obj["window"].get(str("start_line"), {}),script_obj["window"].get(str("end_line"), {}))
 		my_loops=[1,1,1,1,1,1,1,1,1,1]        
 		while(running_script):
-			
 			Current_line= read_line_from_script(script_location, next_script_line)
 			print(Current_line)
+			# FIX: If the line is empty or None, we've reached the end of the script file
+			if not Current_line or Current_line.strip() == "#END_SCRIPT":
+				log_print("End of script reached.")
+				running_script = False
+				break
+
 			if check_line_prefix(Current_line, "Loop_start"):
 				L_num, L_iter, nxt_type, nxt_num =Start_loop_info(Current_line)
 				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","\033[32m██████████████████████████\033[0m Loop ", L_num, " iterations",my_loops[int(L_num)],"\033[32m██████████████████████████\033" )
