@@ -1,4 +1,4 @@
-	#Version:1.3.9
+	#Version:2.0.0
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -10,7 +10,7 @@
 	#--------------------------------------------------------------------------------
 	#								 www.testflowic.com
 	#--------------------------------------------------------------------------------
-	#								© TestFlow
+	#									 © TestFlow
 	#================================================================================
 	
 
@@ -2296,8 +2296,56 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		except Exception as e:
 			raise RuntimeError(f"Failed to delete file '{file_path}': {e}")
 
-
 	def compute_loop_weight(script_path: str) -> int:
+		text = Path(script_path).read_text(encoding="utf-8", errors="replace")
+		lines = text.splitlines()
+
+		# Regex patterns (adjusted to be more flexible with your syntax)
+		loop_start_re = re.compile(r'^\s*Loop_start\(\d+\)\s*:\s*(\d+)', re.IGNORECASE)
+		loop_end_re = re.compile(r'^\s*Loop_end\(\d+\)', re.IGNORECASE)
+		node_re = re.compile(r'^\s*#NODE\d+', re.IGNORECASE)
+
+		total_weighted_steps = 0
+		total_raw_nodes = 0
+		
+		# This stack tracks the iteration count of nested loops
+		# e.g., if Loop1(3) and Loop2(3) are open, stack is [3, 3]
+		iteration_stack = []
+		has_loops = False
+
+		for line in lines:
+			# 1. Detect Loop_start
+			m_start = loop_start_re.match(line)
+			if m_start:
+				has_loops = True
+				iterations = int(m_start.group(1))
+				iteration_stack.append(iterations)
+				continue
+
+			# 2. Detect Loop_end
+			if loop_end_re.match(line):
+				if iteration_stack:
+					iteration_stack.pop()
+				continue
+
+			# 3. Detect node lines
+			if node_re.match(line):
+				total_raw_nodes += 1
+				
+				if iteration_stack:
+					# Calculate weight: multiply all active loop iterations
+					current_weight = 1
+					for i in iteration_stack:
+						current_weight *= i
+					total_weighted_steps += current_weight
+				else:
+					# Node is outside any loop
+					total_weighted_steps += 1
+
+		return total_weighted_steps if has_loops else total_raw_nodes
+
+
+	def xxcompute_loop_weight(script_path: str) -> int:
 		"""
 		Compute:
 			sum_over_loops( loop_iterations * nodes_inside_loop )
@@ -2414,7 +2462,16 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			print(f"\033[31m[ERROR] Failed to evaluate expression after '=': {e}\033[0m")
 			sys.exit(1)
 
-
+	def get_loop_iterations(line: str) -> int:
+		"""
+		Extracts iterations from a line like 'Loop_start(1): 10 (N1)'
+		Returns the integer value, or 0 if not found.
+		"""
+		# Pattern: finds digits after the colon and before the space/parenthesis
+		match = re.search(r":\s*(\d+)", line)
+		if match:
+			return int(match.group(1))
+		return 0
 
 	def extract_var_before_equal(line: str) -> str:
 		"""
@@ -2481,20 +2538,83 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			# If not found, the data might be corrupted or not a PNG
 			print("Warning: Data does not appear to contain a valid PNG signature.")
 			return raw_data
+
+	def Start_loop_info(input_string):
+		# This pattern looks for each part independently and allows them to be missing
+			patterns = {
+				"loop_number": r"Loop_start\((\d+)\)",
+				"iterations": r":\s*(\d+)",
+				"next_node_type": r"\(\s*([a-zA-Z]+)",
+				"next_node_number": r"([a-zA-Z]+)(\d+)\s*\)"
+			}
+			
+			results = {}
+			
+			# Extract loop_number
+			loop_match = re.search(patterns["loop_number"], input_string)
+			results["loop_number"] = loop_match.group(1) if loop_match else "X"
+			
+			# Extract iterations
+			iter_match = re.search(patterns["iterations"], input_string)
+			results["iterations"] = iter_match.group(1) if iter_match else "X"
+			
+			# Extract node type and number from the final parentheses
+			# We look specifically for the pattern (TypeNumber)
+			node_match = re.search(r"\(([a-zA-Z]*)(\d*)\)", input_string)
+			if node_match:
+				results["next_node_type"] = node_match.group(1) if node_match.group(1) else "X"
+				results["next_node_number"] = node_match.group(2) if node_match.group(2) else "X"
+			else:
+				results["next_node_type"] = "X"
+				results["next_node_number"] = "X"
+				
+			# Extract values or set to "X"
+			loop_num = results.get("loop_number", "X")
+			iterations = results.get("iterations", "X")
+			node_type = results.get("next_node_type", "X")
+			node_num = results.get("next_node_number", "X")
+
+			# Return as a TUPLE so you can unpack it correctly
+			return loop_num, iterations, node_type, node_num
+			
+	def end_loop_info(input_string):
+		# 1. Extract Loop Number: Look for digits inside Loop_end(...)
+		loop_match = re.search(r"Loop_end\((\d+)\)", input_string)
+		loop_num = loop_match.group(1) if loop_match else "X"
+		
+		# 2. Extract Next Node info: Look for the second set of parentheses at the end of the line
+		# This pattern captures alphabetical characters followed by digits
+		node_match = re.search(r"\(\s*([a-zA-Z]*)(\d*)\s*\)$", input_string.strip())
+		
+		# Default values
+		node_type = "X"
+		node_num = "X"
+		
+		# If a match is found and it isn't the Loop_end part itself
+		if node_match:
+			# Check to make sure we didn't just re-capture the Loop_end parentheses
+			# We do this by checking if the match is at the very end and distinct
+			full_match = node_match.group(0)
+			if not full_match.startswith("(Loop_end"):
+				node_type = node_match.group(1) if node_match.group(1) else "X"
+				node_num = node_match.group(2) if node_match.group(2) else "X"
+
+		# Return as a TUPLE for direct unpacking
+		return loop_num, node_type, node_num
+
 	
 	def run_script_new(script_location: str, output_location: str, temp_csv: bool= False,debug_mode: bool=False):
 		new_dir_name = Path(script_location).stem + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 		runner_control=output_location
-		output_location=create_out_directory(output_location,new_dir_name)
+		output_location=create_out_directory(output_location,new_dir_name)        
 		# Print a large TestFlow banner at the start of execution.
 		if not temp_csv:
 			print_big_testflow_banner()
-			log_print("Starting a script using ", code_version)
+			log_print("Starting a script using ", code_version)  
 			
-		
-		script_obj = parse_script_structured_v6(script_location)
+		script_obj = parse_script_structured_v6(script_location)        
 		#print(json.dumps(script_obj, indent=2))
-		workflows_obi = parse_workflows_from_script(script_location, case_sensitive=False)
+		workflows_obi = parse_workflows_from_script(script_location, case_sensitive=False)        
 		#print("*************workflows_obi*****************")
 		#print(json.dumps(workflows_obi, indent=2))
 		#print("*************first_workflow*****************")
@@ -2507,210 +2627,87 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		#===================================================================================== Checking VISA addresses	  
 		#validate_visa_connections(script_location)
 		#===================================================================================== Script lines, variables and loops
-		
-		
-		current_line= read_line_from_script(script_location, 2)
+		next_script_line=1
+		Data_line=1
+		running_script= True
+		just_ended_loop= False  
 		node_id = 1
 		INST_VISA=""
 		current_action=""
 		write_status(fr"{runner_control}\status.txt","Running")
 		status = check_status_file(runner_control)
-		#log_print("				File is ",status)
-		# Create the CSV file for results, and extract header map.
-
-		outpath,file_name, header_map= create_csv_file(output_location,script_location,temp_csv)
-		# Analyze script to get proper step count based on loop structure
-		#script_analysis = analyze_steps_and_time(script_location)
+		# =============Create the CSV file for results, and extract header map================
+		outpath,file_name, header_map= create_csv_file(output_location,script_location,temp_csv)        
 		script_n_of_lines = count_script_lines(script_location)
 		print("******************************************************** Total steps ",compute_loop_weight(script_location))
-		# Set up progress tracking with correct step calculation
-		#set_total_steps(compute_loop_weight(script_location))
-		#set_current_step(0)
-		
 		# Extract all variable arrays defined in the script.
 		variables = get_all_variable_arrays(script_location,script_obj["window"].get(str("start_line"), {}),script_obj["window"].get(str("end_line"), {}))
-		# Print first 10 values of each variable array.
-		for name, var_info in variables.items():
-			log_print(f"{name}: {var_info['values'][:10]} ... total: {len(var_info['values'])}")
-		
-		loops_current_iterations: dict[str,any]={}
-		
-		
-		#===================================================================================== First node preparation	
-		if check_line_prefix(current_line, "Loop_start"):
-			#print("Set the obiect if first node is a loop")
-			current_node = script_obj["loops"].get(str(node_id), {})
-			next_node= current_node.get("next")
-		else:
-			current_node = script_obj["nodes"].get(str(node_id), {})   
-			next_node= current_node.get("next")
-			#log_print("*********************************************************This is a Node of type", current_node.get("type"))
-			
-		#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Node: ",node_id , "Starts at: ",current_node.get("start"), "Ends at: ",current_node.get("end"))
-		#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Next Node: ",next_node.get("id") , "Starts at: ",next_node.get("line"))
-		#log_print("--------------------------------------")
-		#log_print("Start the script")
-		Data_line=1
-		running_script= True
-		just_ended_loop= False
-		action_count=0
+		my_loops=[1,1,1,1,1,1,1,1,1,1]        
 		while(running_script):
-			script_line= current_node.get("start")
-			last_line= current_node.get("end")
-			# Check for pause/stop commands
-			status = check_status_file(runner_control) 
-			if status == 'pause':
-				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution paused by user")
-				wait_while_paused(runner_control)
-				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution resumed")
-			elif status == 'stop':
-				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution stopped by user")
-				break		 
-			while script_line< last_line+1:
-				#===================================================
-				if current_node.get("type")=="IF":
-					#print("==========================================IFFFFFFFF node==========================================")
-					current_node = script_obj["nodes"].get(str(node_id), {})
-					Current_line=read_line_from_script(script_location, script_line)
-					equation = extract_equation(Current_line)
-					script_line=script_line+3
-					if has_variable(equation):
-						equation=replace_variables_with_current_values(equation,variables)
-					if safe_eval_bool(equation):
-						next_node= current_node.get("true")
-						log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","IF equation: ",extract_equation(Current_line)," = (", equation,")  ", " [TRUE] ==> ",next_node.get("type"),next_node.get("id"))
-					else:
-						next_node= current_node.get("false")
-						log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","IF equation: ",extract_equation(Current_line)," = (", equation,")  ", " [FALSE] ==> ",next_node.get("type"),next_node.get("id"))
-				elif current_node.get("type")=="N":
-					#print("==========================================A standard node==========================================")
-					current_node = script_obj["nodes"].get(str(node_id), {})
-					next_node= current_node.get("next")
-				else:
-					#print("==========================================Loooooop==========================================")
-					current_node = script_obj["loops"].get(str(node_id), {})
-					next_node= current_node.get("next")
-					
-				#===================================================================================================================================================
-				#===================================================================================================================================================
-				#===================================================================================================================================================
-				#===================================================================================================================================================	
-				#================================================= Reading the line and executing it ===============================================================
-				#===================================================================================================================================================
-				#===================================================================================================================================================
-				#===================================================================================================================================================
+			
+			Current_line= read_line_from_script(script_location, next_script_line)
+			print(Current_line)
+			if check_line_prefix(Current_line, "Loop_start"):
+				L_num, L_iter, nxt_type, nxt_num =Start_loop_info(Current_line)
+				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","\033[32m██████████████████████████\033[0m Loop ", L_num, " iterations",my_loops[int(L_num)],"\033[32m██████████████████████████\033" )
+				print(L_num)
+				this_loop_iteration= my_loops[int(L_num)]
+				# Define open loop and update CSV.
+				loop_column_name=f"Loop({L_num})"
+				update_csv_cell(outpath,Data_line,"N",Data_line)
+				update_csv_cell(outpath,Data_line,loop_column_name,this_loop_iteration)
 				
-				#print("Doing node:	 ",current_node.get("type"),node_id, "	 Next is: ",next_node.get("type"),next_node.get("id"))
-				Current_line=read_line_from_script(script_location, script_line)	
+			elif check_line_prefix(Current_line, "Variable:"):
+				# When a variable line is found, update its current value for this iteration.
+				Var_name_is=extract_prefixed_line(Current_line, "Variable: ")
+				# Select next value for the variable array in the current iteration.
+				variables[Var_name_is]['current_value']=variables[Var_name_is]['values'][this_loop_iteration-1]
+				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","[",Var_name_is,"] = ",variables[Var_name_is]['current_value'])
+				update_csv_cell(outpath,Data_line,Var_name_is,variables[Var_name_is]['current_value'])
+			
+			#elif check_line_prefix(Current_line, "Range:"):
+				# Log and skip range lines (no action taken).
+				#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","....")
+			
+			elif check_line_prefix(Current_line, "#NODE"):
+				# Start of a node block. Parse node and log its info.
+				increment_step()
+				action_count=0
+				node_info=parse_node_line(Current_line)
 				
-				if check_line_prefix(Current_line, "Loop_start"):
-					this_loop_n=node_id
-					this_loop_current_iteration= current_node.get("current_iteration")
-					this_loop_total_iteration= current_node.get("iterations")
-					current_node["current_iteration"] = int(current_node.get("current_iteration", 0))
-					if this_loop_current_iteration > this_loop_total_iteration:
-						loop_end_line= current_node.get("end") 
-						Current_line=read_line_from_script(script_location, loop_end_line) 
-						after_loop = get_next_from_loop_end_line(Current_line)
-						#print("After loop is ",after_loop)
-						log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","\033[32m¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦\033[0m Loop ",node_id," ended", this_loop_total_iteration, " iterations")
-						if not after_loop== "X":
-							next_type = after_loop["next"]["type"]	
-							next_num  = int(after_loop["next"]["id"])
-							#print("next_num loop is ",next_num)
-							if next_type=="LE":
-							  current_node = script_obj["loops"].get(str(next_num), {})
-							  next_node["id"]= next_num
-							elif next_type=="N":
-								current_node = script_obj["nodes"].get(str(next_num), {})
-								next_node["id"]= next_num
-							else:
-								current_node = script_obj["nodes"].get(str(next_num), {})
-								next_node["id"]= next_num 
-								
-							just_ended_loop= True
-							log_print("----------------------------------------------------------------- Ended the loop, Next node is ", next_node, "current_node  ", current_node)
-							break
-						else:
-						   running_script= False
-						   break
-							
-					#log_print("======= LOOP ",this_loop_n," => Iteration= ",this_loop_current_iteration, " ======Next is: ",next_node.get("type"),next_node.get("id"),"=======")
-					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","\033[45m¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦ LOOP ",this_loop_n," => Iteration= ",this_loop_current_iteration,"¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦\033[0m")
-					# Define open loop and update CSV.
-					loop_column_name=f"Loop({node_id})"
-					update_csv_cell(outpath,Data_line,"N",Data_line)
-					update_csv_cell(outpath,Data_line,loop_column_name,this_loop_current_iteration)
-				elif check_line_prefix(Current_line, "Variable:"):
-					# When a variable line is found, update its current value for this iteration.
-					Var_name_is=extract_prefixed_line(Current_line, "Variable: ")
-					# Select next value for the variable array in the current iteration.
-					variables[Var_name_is]['current_value']=variables[Var_name_is]['values'][this_loop_current_iteration-1]
-					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","[",Var_name_is,"] = ",variables[Var_name_is]['current_value'])
-					update_csv_cell(outpath,Data_line,Var_name_is,variables[Var_name_is]['current_value'])
-				
-				#elif check_line_prefix(Current_line, "Range:"):
-					# Log and skip range lines (no action taken).
-					#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","....")
-				
-				elif check_line_prefix(Current_line, "#NODE"):
-					# Start of a node block. Parse node and log its info.
-					increment_step()
-					action_count=0
-					node_info=parse_node_line(Current_line)
-					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Node[", node_info['node_number'],"]	  " ,node_info['node_type'],"	" ,node_info['instrument_name'],"	" ,node_info['manufacturer'])
-				elif check_line_prefix(Current_line, "INST::"):
-					# Extract and set the instrument VISA address.
-					INST_VISA=extract_prefixed_line(Current_line, "INST:: ")
-					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","	VISA Address (",INST_VISA,") [",node_info['node_type'],"]")			   
-				elif check_line_prefix(Current_line, "#ACTION:"):
-					# Start of an action block. Parse and log action.
-					action_count=action_count+1
-					current_action=get_action_data_name(Current_line)
-					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:	 [",action_count,"]Action: ", current_action)  
-					if current_action=="Math":
-						script_line=script_line+1
-						Current_line=read_line_from_script(script_location, script_line)
-						output_variable= extract_var_before_equal(Current_line)
-						equation=replace_variables_with_current_values(Current_line,variables)
-						variables[output_variable]['current_value']= eval_expr_after_equal(equation)
-						log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:	 ",output_variable,"=",equation,"=",variables[output_variable]['current_value'])
-	   
-				elif check_line_prefix(Current_line, "CMD:"):
-					# Process a command to be sent to instrument or execute local action.
-					command=extract_prefixed_line(Current_line, "CMD:")
-					# If command contains variables, replace with their values.
-					if has_variable(command):
-					   command=replace_variables_with_current_values(command,variables)
-					   #log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:	 ",command)
-					# Check for wait command.
-					if check_line_prefix(command, "wait"):
-						# Delay/wait command.
-						log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","		Waiting for ",wait_time_is(command)," ms" )
-						time.sleep(wait_time_is(command)/1000)
+				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Node[", node_info['node_number'],"]	  " ,node_info['node_type'],"	" ,node_info['instrument_name'],"	" ,node_info['manufacturer'])
+			elif check_line_prefix(Current_line, "INST::"):
+				# Extract and set the instrument VISA address.
+				INST_VISA=extract_prefixed_line(Current_line, "INST:: ")
+				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","	VISA Address (",INST_VISA,") [",node_info['node_type'],"]")			   
+			elif check_line_prefix(Current_line, "#ACTION:"):
+				# Start of an action block. Parse and log action.
+				action_count=action_count+1
+				current_action=get_action_data_name(Current_line)
+				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:	 [",action_count,"]Action: ", current_action)  
+				if current_action=="Math":
+					next_script_line=next_script_line+1
+					Current_line=read_line_from_script(script_location, next_script_line)
+					output_variable= extract_var_before_equal(Current_line)
+					equation=replace_variables_with_current_values(Current_line,variables)
+					variables[output_variable]['current_value']= eval_expr_after_equal(equation)
+					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:	 ",output_variable,"=",equation,"=",variables[output_variable]['current_value'])
+   
+			elif check_line_prefix(Current_line, "CMD:"):
+				# Process a command to be sent to instrument or execute local action.
+				command=extract_prefixed_line(Current_line, "CMD:")
+				# If command contains variables, replace with their values.
+				if has_variable(command):
+				   command=replace_variables_with_current_values(command,variables)
+				   #log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:	 ",command)
+				# Check for wait command.
+				if check_line_prefix(command, "wait"):
+					# Delay/wait command.
+					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","		Waiting for ",wait_time_is(command)," ms" )
+					time.sleep(wait_time_is(command)/1000)
 
-					elif has_question_mark(command):
-						# SCPI query (read data from instrument).
-						#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Send and recieve", command)
-						Measurment=send_scpi_query(INST_VISA, command)
-						time.sleep(80/1000)
-						# Update CSV with measurement result.
-						action_column_title = f"{current_action}(N{node_info['node_number']}|A{action_count})"
-						update_csv_cell(outpath,Data_line,action_column_title,Measurment)
-						write_flag=1
-						log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:	 ",action_column_title," = ", Measurment)
-					elif check_line_prefix(command, "save2var"):
-						Varible2save= var2save_name(extract_prefixed_line(command, "CMD: save2var "))
-						variables[Varible2save]['current_value']=Measurment
-						log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:	 ",Varible2save," = ", Measurment)
-					else:
-						# Generic SCPI command (write only, no read).
-						send_scpi_command(INST_VISA, command)
-						#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Command sent", current_action," , CMD: ",command)
-				
-				elif check_line_prefix(Current_line, "QRY:"):
-					command=extract_prefixed_line(Current_line, "QRY:")
-					 # SCPI query (read data from instrument).
+				elif has_question_mark(command):
+					# SCPI query (read data from instrument).
 					#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Send and recieve", command)
 					Measurment=send_scpi_query(INST_VISA, command)
 					time.sleep(80/1000)
@@ -2718,177 +2715,153 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 					action_column_title = f"{current_action}(N{node_info['node_number']}|A{action_count})"
 					update_csv_cell(outpath,Data_line,action_column_title,Measurment)
 					write_flag=1
-					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ",action_column_title," = ", Measurment)
-					
-				#elif check_line_prefix(Current_line, "MESSAGE:"):
-				#	 pause_message= extract_prefixed_line(Current_line, "MESSAGE:")
-				#	 show_message_dialog("Waiting you",pause_message)
-					
-				elif check_line_prefix(Current_line, "PNG"):
-					command=extract_prefixed_line(Current_line, "PNG:")
-					image_name= f"image_{Data_line}"
-					image_path=create_unique_image_file(output_location,image_name)
-					image_data=send_to_read_byte(INST_VISA, command)
-					fixed_image_data = validate_and_fix_png(image_data)
-					# Save the image data to file
-					save_image_data(image_path, fixed_image_data)
-					action_column_title = f"{current_action}img(N{node_info['node_number']}|A{action_count})"
-					update_csv_cell(outpath,Data_line,action_column_title,image_path)
-					
-				elif check_line_prefix(Current_line, "SET"):
-					command=extract_prefixed_line(Current_line, "SET:")
-					image_name= f"image_{Data_line}"
-					image_path=create_unique_set_file(output_location,image_name)
-					image_data=send_to_read_byte(INST_VISA, command)
-					# Save the image data to file
-					save_image_data(image_path, image_data)
-					action_column_title = f"{current_action}set(N{node_info['node_number']}|A{action_count})"
-					update_csv_cell(outpath,Data_line,action_column_title,image_path)					 
-				#elif check_line_prefix(Current_line, "#END_ACTION"):
-					# End of action block.
-					#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","close action", current_action)
-					#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ")
-				elif check_line_prefix(Current_line, "#END_NODE"):
-					# End of node block.
-					#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","END_NODE[",node_info['node_number'],"]")
-								# Check for pause/stop commands
-					status = check_status_file(runner_control) 
-					if status == 'pause':
-						log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution paused by user")
-						wait_while_paused(runner_control)
-						log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution resumed")
-					elif status == 'stop':
-						break 
-						
-					#if debug_mode:
-					#	 show_debug_message(f'Degug mode::: Node[", {node_info['node_number']}] ,{node_info['node_type']}.........Press Enter to continue')
-				elif check_line_prefix(Current_line, "Loop_end"):
-					#wait_while_paused(runner_control)
-					# End of loop block; update iteration, possibly repeat, and log.
-					if write_flag==1 :
-						# Write timestamp and data line index to CSV, then advance line counter.
-						update_csv_cell(outpath,Data_line,"Date",datetime.now().strftime("%Y-%m-%d"))
-						update_csv_cell(outpath,Data_line,"Time",datetime.now().strftime("%H:%M:%S"))
-						update_csv_cell(outpath,Data_line,0,Data_line)
-						Data_line=Data_line+1
-						write_flag=0
-					# Update loop iteration counter and check if another iteration is needed.
-					this_loop_n=get_loop_end_number(Current_line)
-					loops[this_loop_n]['current_iteration']=(loops[this_loop_n]['current_iteration'])+1
-					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Ending loop (",this_loop_n,") At iteration= ",loops[this_loop_n]['current_iteration'])
-					if loops[this_loop_n]['current_iteration']<loops[this_loop_n]['iterations']:
-						# If loop not finished, set next step to loop start line.
-						Step_line=loops[this_loop_n]['line_index']
-						log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Going back to loop at line ", Step_line)
-					else:
-						# Loop is done, reset current iteration count.
-						loops[this_loop_n]['current_iteration']=0
-						
-				elif check_line_prefix(Current_line, "Delay:"):
-					# Explicit delay line: sleep for specified milliseconds.
-					delay_time=get_delay_in_ms(Current_line)/1000
-					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","	Delay action for: ", delay_time," seconds")
-					time.sleep(delay_time)					  
-
-				elif check_line_prefix(Current_line, "MESSAGE:"):
-					message_is =extract_prefixed_line(Current_line, "MESSAGE:")
-					write_status(fr"{runner_control}\status.txt","Pause")
-					# Check for pause/stop commands
-					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Test paused with message: ", message_is ,"Once ready click Resume")
-					wait_while_paused(runner_control)
-					#statusx=input()
-					script_line=script_line+1
-
-				elif check_line_prefix(Current_line, "Work_flow:"):
-					
-					wf_name= extract_workflow_name(Current_line)
-					next_workflow= workflows_obi["workflows"][wf_name][0]
-					next_workflow_script= next_workflow.get(str("lines"))
-					temp_script_location= Path(script_location).parent
-					#print(temp_script_location)
-					#input()
-					next_workflow_path=(fr"{temp_script_location}\{wf_name}.atoms")
-					create_subworkflow(next_workflow_script,next_workflow_path)
-					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Going to another workflow: ", wf_name, " at : ", next_workflow_path)
-					#print(json.dumps(next_workflow, indent=2))
-					#input()
-					separator=f"************************************************************ Starting script {wf_name} ************************************************************"
-					Data_line=Data_line+2
-					write_text_to_row_first_col(outpath,Data_line,separator)
-					temp_wf_csv, temp_o_location= run_another_workflow(next_workflow_path,output_location,Data_line)
-					temp_log=f"{temp_o_location}{temp_wf_csv}.log"
-					temp_wf_csv=fr"{temp_o_location}\{temp_wf_csv}.csv"
-					Data_line= concat_csv_into_second(temp_wf_csv, outpath)-1
-					#separator=f"************************************************************ Ended script {wf_name} ************************************************************"
-					write_text_to_row_first_col(outpath,Data_line+2,separator)
-					script_line=script_line+1
-					#delete_csv_file(temp_wf_csv)
-					#delete_csv_file(temp_log)
-					script_obj = parse_script_structured_v6(script_location)
-					current_node = script_obj["nodes"].get(str(node_id), {})   
-					next_node= current_node.get("next")
-
-				
-				#===================================================================================================================================================
-				#===================================================================================================================================================
-				#===================================================================================================================================================
-				#===================================================================================================================================================	
-				#================================================= Done Reading the line and executing it ==========================================================
-				#===================================================================================================================================================
-				#===================================================================================================================================================
-				#===================================================================================================================================================
-				script_line=script_line+1
-				#script_obj = parse_script_structured_v6(script_location)
-				#current_node = script_obj["nodes"].get(str(node_id), {})
-				next_node= current_node.get("next")
-				#print("Next node info is",current_node)
-				if next_node.get("id")=="X":
-					running_script= False
-
-					
-				text_line=read_line_from_script(script_location, script_line)	 
-				if check_line_prefix(text_line, "Loop_start"):
-					break
-					
-				if check_line_prefix(text_line, "#NODE"):
-					break
+					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:	 ",action_column_title," = ", Measurment)
+				elif check_line_prefix(command, "save2var"):
+					Varible2save= var2save_name(extract_prefixed_line(command, "CMD: save2var "))
+					variables[Varible2save]['current_value']=Measurment
+					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:	 ",Varible2save," = ", Measurment)
+				else:
+					# Generic SCPI command (write only, no read).
+					send_scpi_command(INST_VISA, command)
+					#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Command sent", current_action," , CMD: ",command)
 			
-			#=================================================== End While 2nd
+			elif check_line_prefix(Current_line, "QRY:"):
+				command=extract_prefixed_line(Current_line, "QRY:")
+				 # SCPI query (read data from instrument).
+				#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Send and recieve", command)
+				Measurment=send_scpi_query(INST_VISA, command)
+				time.sleep(80/1000)
+				# Update CSV with measurement result.
+				action_column_title = f"{current_action}(N{node_info['node_number']}|A{action_count})"
+				update_csv_cell(outpath,Data_line,action_column_title,Measurment)
+				write_flag=1
+				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ",action_column_title," = ", Measurment)
 				
-			if not running_script:
-				break	 
-			#else:
-				#wait_while_paused(runner_control)
+			#elif check_line_prefix(Current_line, "MESSAGE:"):
+			#	 pause_message= extract_prefixed_line(Current_line, "MESSAGE:")
+			#	 show_message_dialog("Waiting you",pause_message)
 				
-				
-			script_line= next_node.get("line")
-			node_id = next_node.get("id")
-			if next_node.get("type") == "LE":
-				lid = str(next_node.get("id"))
-				current_node = script_obj["loops"].setdefault(lid, {})
-				current_node["current_iteration"] = int(current_node.get("current_iteration", 0)) + 1
-				#log_print("======= LOOP", node_id, "======= Finished iteration ", current_node["current_iteration"]-1)
-				# Write timestamp and data line index to CSV, then advance line counter.
+			elif check_line_prefix(Current_line, "PNG"):
+				action_column_title = f"{current_action}img(N{node_info['node_number']}|A{action_count})"
+				try:
+						command = extract_prefixed_line(Current_line, "PNG:")
+						image_name = f"{current_action}_{Data_line}"
+						image_path = create_unique_image_file(output_location, image_name)
+						
+						# Attempt to get image data
+						image_data = send_to_read_byte(INST_VISA, command)
+						
+						if image_data is not None:
+							fixed_image_data = validate_and_fix_png(image_data)
+							
+							# Save the image data to file
+							save_image_data(image_path, fixed_image_data)
+							
+							# Update CSV with the path
+							action_column_title = f"{current_action}_(N{node_info['node_number']}|A{action_count})"
+							update_csv_cell(outpath, Data_line, action_column_title, image_path)
+						else:
+							log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: : Warning: No image data received (Device likely disconnected).")
+							update_csv_cell(outpath, Data_line, f"{current_action}img", "ERROR: NO DATA")
+							
+				except Exception as e:
+					# This catches VISA errors or connection timeouts without stopping the script
+					log_print(f"[ {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} ]: PNG Capture Failed -> {e}")
+					# Optionally log "FAILED" to the CSV so you know why the cell is empty
+					update_csv_cell(outpath, Data_line, action_column_title, "CAPTURE_FAILED")
+								
+			elif check_line_prefix(Current_line, "SET"):
+				command=extract_prefixed_line(Current_line, "SET:")
+				image_name= f"image_{Data_line}"
+				image_path=create_unique_set_file(output_location,image_name)
+				image_data=send_to_read_byte(INST_VISA, command)
+				# Save the image data to file
+				save_image_data(image_path, image_data)
+				action_column_title = f"{current_action}set(N{node_info['node_number']}|A{action_count})"
+				update_csv_cell(outpath,Data_line,action_column_title,image_path)					 
+			#elif check_line_prefix(Current_line, "#END_ACTION"):
+				# End of action block.
+				#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","close action", current_action)
+				#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ")
+			elif check_line_prefix(Current_line, "#END_NODE"):
+				# End of node block.
+				#log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","END_NODE[",node_info['node_number'],"]")
+							# Check for pause/stop commands
+				status = check_status_file(runner_control) 
+				if status == 'pause':
+					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution paused by user")
+					wait_while_paused(runner_control)
+					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Script execution resumed")
+				elif status == 'stop':
+					break 
+					
+				#if debug_mode:
+				#	 show_debug_message(f'Degug mode::: Node[", {node_info['node_number']}] ,{node_info['node_type']}.........Press Enter to continue')
+			elif check_line_prefix(Current_line, "Loop_end"):
 				update_csv_cell(outpath,Data_line,"Date",datetime.now().strftime("%Y-%m-%d"))
 				update_csv_cell(outpath,Data_line,"Time",datetime.now().strftime("%H:%M:%S"))
 				Data_line=Data_line+1
-			elif just_ended_loop:
-				log_print("Loop ended and goint to:		  ",current_node, )
-				just_ended_loop= False
-			else:
-				current_node = script_obj["nodes"].get(str(next_node.get("id")), {})
-			
-			
+				LE_num,nxt_type,nxt_num= end_loop_info(Current_line)
+				current_node = script_obj["loops"].get(str(LE_num), {})
+				next_node= current_node.get("next")
+				#
+				max_iterations=int(current_node.get("iterations", 1))
+				
+				if my_loops[int(LE_num)]>=max_iterations:
+					#endloop
+					my_loops[int(LE_num)]=1
+					if(nxt_type=="X"):
+						break
+				else:
+					#Go_to step
+					my_loops[int(LE_num)]=my_loops[int(LE_num)]+1
+					next_script_line=current_node["start"]-1
+					#print(next_script_line)
+				
+			elif check_line_prefix(Current_line, "Delay:"):
+				# Explicit delay line: sleep for specified milliseconds.
+				delay_time=get_delay_in_ms(Current_line)/1000
+				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","	Delay action for: ", delay_time," seconds")
+				time.sleep(delay_time)					  
 
-			#log_print("========== Node ", next_node.get("type"),next_node.get("id"), "=================")	  
-			#print(current_node) 
-			#print("=======================================")			
-			next_node= current_node.get("next")
+			elif check_line_prefix(Current_line, "MESSAGE:"):
+				message_is =extract_prefixed_line(Current_line, "MESSAGE:")
+				write_status(fr"{runner_control}\status.txt","Pause")
+				# Check for pause/stop commands
+				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Test paused with message: ", message_is ,"Once ready click Resume")
+				wait_while_paused(runner_control)
+				#statusx=input()
+				
+			elif check_line_prefix(Current_line, "Work_flow:"):
+				wf_name= extract_workflow_name(Current_line)
+				next_workflow= workflows_obi["workflows"][wf_name][0]
+				next_workflow_script= next_workflow.get(str("lines"))
+				temp_script_location= Path(script_location).parent
+				#print(temp_script_location)
+				#input()
+				next_workflow_path=(fr"{temp_script_location}\{wf_name}.atoms")
+				create_subworkflow(next_workflow_script,next_workflow_path)
+				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Going to another workflow: ", wf_name, " at : ", next_workflow_path)
+				#print(json.dumps(next_workflow, indent=2))
+				#input()
+				separator=f"************************************************************ Starting script {wf_name} ************************************************************"
+				Data_line=Data_line+2
+				write_text_to_row_first_col(outpath,Data_line,separator)
+				temp_wf_csv, temp_o_location= run_another_workflow(next_workflow_path,output_location,Data_line)
+				temp_log=f"{temp_o_location}{temp_wf_csv}.log"
+				temp_wf_csv=fr"{temp_o_location}\{temp_wf_csv}.csv"
+				Data_line= concat_csv_into_second(temp_wf_csv, outpath)-1
+				#separator=f"************************************************************ Ended script {wf_name} ************************************************************"
+				write_text_to_row_first_col(outpath,Data_line+2,separator)
+				next_script_line=next_script_line+1
+				#delete_csv_file(temp_wf_csv)
+				#delete_csv_file(temp_log)
+				script_obj = parse_script_structured_v6(script_location)
+				current_node = script_obj["nodes"].get(str(node_id), {})   
+				next_node= current_node.get("next")	
+				
+			next_script_line=next_script_line+1       
 
-		#=================================================== End While 1st	 
-		
-
-		
 		if status=="stop":
 			print_big_teststopped_banner()	
 		else:
@@ -2907,6 +2880,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			return file_name, output_location
 		else:
 			return 0
+			
 			
 		
 		
