@@ -1,4 +1,4 @@
-	#Version:2.0.2
+	#Version:2.0.3
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -1519,7 +1519,6 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			log_print(f"\033[31mError deleting status file: {e}\033[0m")
 
 
-
 	def parse_script_structured_v6(path, case_sensitive=True):
 		text = Path(path).read_text(encoding="utf-8", errors="replace")
 		lines = text.splitlines()
@@ -1528,8 +1527,8 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		nlines = [norm(L) for L in lines]
 
 		START = norm("#START_SCRIPT")
-		END	  = norm("#END_SCRIPT")
-		WF	  = norm("#START_WORKFLOW")	 # ? NEW
+		END   = norm("#END_SCRIPT")
+		WF    = norm("#START_WORKFLOW")
 
 		# Find START_SCRIPT
 		start_idx = next((i for i, L in enumerate(nlines, start=1) if START in L), None)
@@ -1549,29 +1548,27 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 				None
 			)
 			if wf_idx is None:
-				return {
-					"_ERROR": "END_SCRIPT not found (after START_SCRIPT) and no START_WORKFLOW found"
-				}
-			# Use the line before #START_WORKFLOW as the script end (exclude the workflow line)
+				return {"_ERROR": "END_SCRIPT not found and no START_WORKFLOW found"}
 			end_idx = wf_idx - 1
 			if end_idx < start_idx:
-				return {
-					"_ERROR": "START_WORKFLOW found before START_SCRIPT; cannot determine script window"
-				}
+				return {"_ERROR": "START_WORKFLOW found before START_SCRIPT"}
 
 		flags = 0 if case_sensitive else re.IGNORECASE
 		re_node_start = re.compile(r"#NODE\s*(\d+)\b(?!_IF)", flags)
-		re_node_end	  = re.compile(r"#END_NODE\s*(\d+)\b", flags)
+		re_node_end   = re.compile(r"#END_NODE\s*(\d+)\b", flags)
 		re_loop_start = re.compile(r"Loop_start\s*\(\s*(\d+)\s*\)", flags)
-		re_loop_end	  = re.compile(r"Loop_end\s*\(\s*(\d+)\s*\)", flags)
+		re_loop_end   = re.compile(r"Loop_end\s*\(\s*(\d+)\s*\)", flags)
 
 		re_node_if_start = re.compile(r"#NODE\s*(\d+)_IF\s*\((.*?)\)\s*$", flags)
-		re_end_if		 = re.compile(r"#END_IF\b", flags)
-		re_true_line	 = re.compile(r"^\s*TRUE\s*:\s*(N|LE)\s*(\d+)\s*$", flags)
-		re_false_line	 = re.compile(r"^\s*FALSE\s*:\s*(N|LE)\s*(\d+)\s*$", flags)
+		re_end_if        = re.compile(r"#END_IF\b", flags)
+		re_true_line     = re.compile(r"^\s*TRUE\s*:\s*(N|LE)\s*(\d+)\s*$", flags)
+		re_false_line    = re.compile(r"^\s*FALSE\s*:\s*(N|LE)\s*(\d+)\s*$", flags)
 
 		re_next_after_endnode = re.compile(r"#END_NODE\s*(\d+).*?\(\s*(N|LE)\s*(\d+)\s*\)", flags)
-		re_loop_start_full	  = re.compile(r"Loop_start\s*\(\s*(\d+)\s*\)\s*:\s*(\d+)\s*\(\s*N\s*(\d+)\s*\)", flags)
+		
+		# UPDATED: Captures (N|LE) instead of just N
+		re_loop_start_full = re.compile(r"Loop_start\s*\(\s*(\d+)\s*\)\s*:\s*(\d+)\s*\(\s*(N|LE)\s*(\d+)\s*\)", flags)
+		re_loop_next_any   = re.compile(r"\(\s*(N|LE)\s*(\d+)\s*\)", flags)
 
 		script_markers = {"#START_SCRIPT": [], "#START_WORKFLOW": [], "#END_WORKFLOW": [], "#END_SCRIPT": []}
 		nodes, loops = {}, {}
@@ -1582,19 +1579,18 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		in_if = False
 		if_id = if_equ = None
 		if_start_line = None
-		if_true_src, if_false_src = None, None
+		if_true_src = if_false_src = None
 		if_next_true = if_next_false = None
 
 		for lineno in range(start_idx, end_idx + 1):
 			raw = lines[lineno-1]
-			L	= nlines[lineno-1]
+			L   = nlines[lineno-1]
 
 			if START in L: script_markers["#START_SCRIPT"].append(lineno)
-			if WF in L:	   script_markers["#START_WORKFLOW"].append(lineno)
+			if WF in L:    script_markers["#START_WORKFLOW"].append(lineno)
 			if norm("#END_WORKFLOW") in L: script_markers["#END_WORKFLOW"].append(lineno)
 			if END in L:   script_markers["#END_SCRIPT"].append(lineno)
 
-			# Inside IF node body
 			if in_if:
 				mt = re_true_line.search(raw if case_sensitive else L)
 				if mt:
@@ -1629,7 +1625,6 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 					continue
 				continue
 
-			# IF node start
 			mif = re_node_if_start.search(raw if case_sensitive else L)
 			if mif:
 				if_id = mif.group(1)
@@ -1642,7 +1637,6 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 				node_all_starts.setdefault(if_id, []).append(if_start_line)
 				continue
 
-			# Standard node start
 			m = re_node_start.search(raw if case_sensitive else L)
 			if m:
 				nid = m.group(1)
@@ -1652,7 +1646,6 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 					nodes[nid]["start"] = lineno
 				node_all_starts.setdefault(nid, []).append(lineno)
 
-			# Standard node end
 			m = re_node_end.search(raw if case_sensitive else L)
 			if m:
 				nid = m.group(1)
@@ -1666,21 +1659,20 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 					nodes[nid]["next"] = {"type": rtype, "id": rid}
 					refs.append(("NODE", nid, rtype, rid, lineno, None))
 
-			# Loop start (full)
+			# UPDATED LOOP LOGIC
 			mfull = re_loop_start_full.search(raw if case_sensitive else L)
 			if mfull:
-				lid, iters, nextn = mfull.group(1), mfull.group(2), mfull.group(3)
+				lid, iters, rtype, rid = mfull.group(1), mfull.group(2), mfull.group(3), mfull.group(4)
 				loops.setdefault(lid, {})
 				if "start" not in loops[lid]:
 					loops[lid]["start"] = lineno
 				loops[lid].setdefault("current_iteration", 1)
 				loops[lid]["type"] = "loop"
 				loops[lid]["iterations"] = int(iters)
-				loops[lid]["next"] = {"type": "N", "id": nextn}
-				refs.append(("LOOP_START", lid, "N", nextn, lineno, None))
+				loops[lid]["next"] = {"type": rtype, "id": rid}
+				refs.append(("LOOP_START", lid, rtype, rid, lineno, None))
 				loop_all_starts.setdefault(lid, []).append(lineno)
 			else:
-				# Loop start (basic)
 				mbase = re_loop_start.search(raw if case_sensitive else L)
 				if mbase:
 					lid = mbase.group(1)
@@ -1689,14 +1681,15 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 						loops[lid]["start"] = lineno
 					loops[lid].setdefault("current_iteration", 0)
 					loops[lid].setdefault("type", "loop")
-					mnext = re.search(r"\(\s*N\s*(\d+)\s*\)", raw if case_sensitive else L, flags)
+					
+					# UPDATED: Checks for N or LE in basic loop start line
+					mnext = re_loop_next_any.search(raw if case_sensitive else L)
 					if mnext:
-						nextn = mnext.group(1)
-						loops[lid]["next"] = {"type": "N", "id": nextn}
-						refs.append(("LOOP_START", lid, "N", nextn, lineno, None))
+						rtype, rid = mnext.group(1), mnext.group(2)
+						loops[lid]["next"] = {"type": rtype, "id": rid}
+						refs.append(("LOOP_START", lid, rtype, rid, lineno, None))
 					loop_all_starts.setdefault(lid, []).append(lineno)
 
-			# Loop end
 			m = re_loop_end.search(raw if case_sensitive else L)
 			if m:
 				lid = m.group(1)
@@ -1712,36 +1705,29 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			if rtype == "N":
 				dest_line = nodes.get(rid, {}).get("start")
 				if dest_line is None:
-					warnings.append(f"Ref at line {source_line}: N{rid} not found or has no start.")
+					warnings.append(f"Ref at line {source_line}: N{rid} not found.")
 			elif rtype == "LE":
 				dest_line = loops.get(rid, {}).get("end")
 				if dest_line is None:
-					warnings.append(f"Ref at line {source_line}: LE{rid} not found or has no end.")
+					warnings.append(f"Ref at line {source_line}: LE{rid} not found.")
 
-			if kind == "NODE" and "next" in nodes.get(src_id, {}):
-				nodes[src_id]["next"]["line"] = dest_line if dest_line is not None else source_line
-				nodes[src_id]["next"]["source_line"] = source_line
-			elif kind == "LOOP_START" and "next" in loops.get(src_id, {}):
-				loops[src_id]["next"]["line"] = dest_line if dest_line is not None else source_line
-				loops[src_id]["next"]["source_line"] = source_line
-			elif kind == "NODE_IF_TRUE" and "true" in nodes.get(src_id, {}):
-				nodes[src_id]["true"]["line"] = dest_line if dest_line is not None else source_line
-				nodes[src_id]["true"]["source_line"] = source_line
-			elif kind == "NODE_IF_FALSE" and "false" in nodes.get(src_id, {}):
-				nodes[src_id]["false"]["line"] = dest_line if dest_line is not None else source_line
+			# Assign line info to the next/true/false objects
+			target_dict = None
+			if kind == "NODE" and src_id in nodes: target_dict = nodes[src_id].get("next")
+			elif kind == "LOOP_START" and src_id in loops: target_dict = loops[src_id].get("next")
+			elif kind == "NODE_IF_TRUE" and src_id in nodes: target_dict = nodes[src_id].get("true")
+			elif kind == "NODE_IF_FALSE" and src_id in nodes: target_dict = nodes[src_id].get("false")
 
-		# Default next for standard nodes with no explicit next
+			if target_dict:
+				target_dict["line"] = dest_line if dest_line is not None else source_line
+				target_dict["source_line"] = source_line
+
+		# Default next for standard nodes
 		for nid, rec in nodes.items():
-			if rec.get("type") == "IF":
-				continue
+			if rec.get("type") == "IF": continue
 			if "end" in rec and "next" not in rec:
 				fallback_line = rec["end"] + 1 if rec["end"] < end_idx else None
-				rec["next"] = {
-					"type": "X",
-					"id": "X",
-					"line": fallback_line,
-					"source_line": rec["end"]
-				}
+				rec["next"] = {"type": "X", "id": "X", "line": fallback_line, "source_line": rec["end"]}
 
 		return {
 			"window": {"start_line": start_idx, "end_line": end_idx},
@@ -2654,7 +2640,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
 			if check_line_prefix(Current_line, "Loop_start"):
 				L_num, L_iter, nxt_type, nxt_num =Start_loop_info(Current_line)
-				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","\033[32m██████████████████████████\033[0m Loop ", L_num, " iterations",my_loops[int(L_num)],"\033[32m██████████████████████████\033" )
+				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","\033[32m██████████████████████████\033[0m Loop(", L_num, ") iteration ->",my_loops[int(L_num)],"\033[32m██████████████████████████\033" )
 				#print(L_num)
 				this_loop_iteration= my_loops[int(L_num)]
 				# Define open loop and update CSV.
@@ -2811,10 +2797,12 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 				next_node= current_node.get("next")
 				#
 				max_iterations=int(current_node.get("iterations", 1))
-				
+				#print("max_iterations", max_iterations, "my_loops[int(LE_num)]", my_loops[int(LE_num)], "LE_num", LE_num)
+				#print("current_node", current_node, "next_node", next_node)
 				if my_loops[int(LE_num)]>=max_iterations:
 					#endloop
 					my_loops[int(LE_num)]=1
+					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","    ...................................    ")
 					if(nxt_type=="X"):
 						break
 				else:
