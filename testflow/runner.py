@@ -1,4 +1,4 @@
-	#Version:2.0.3
+	#Version:2.0.4
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -2588,6 +2588,54 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		# Return as a TUPLE for direct unpacking
 		return loop_num, node_type, node_num
 
+
+	def autofill_csv_results(file_path):
+		"""
+		Runs after the script finishes. 
+		Fills empty Loop and Variable cells with values from the row above.
+		Ignores rows where the first column ('N') is empty.
+		"""
+		if not os.path.exists(file_path):
+			print(f"Error: {file_path} not found.")
+			return
+
+		updated_rows = []
+		last_known_values = {}
+
+		with open(file_path, mode='r', encoding='utf-8', newline='') as f:
+			reader = csv.DictReader(f)
+			fieldnames = reader.fieldnames
+			
+			for row in reader:
+				# Check if the first column ('N') is empty
+				if not row.get('N') or row['N'].strip() == "":
+					# If 'N' is empty, we keep the row as is (or skip it if preferred)
+					updated_rows.append(row)
+					continue
+
+				# Iterate through columns to fill gaps
+				for col in fieldnames:
+					# We only care about Loop and Variable columns
+					# (Ignoring N, Date, Time, or instrument result columns)
+					if col.startswith("Loop") or "var" in col.lower():
+						current_val = row[col].strip() if row[col] else ""
+						
+						if current_val != "":
+							# Update our "memory" with the new value
+							last_known_values[col] = current_val
+						else:
+							# If empty, fill from memory if a previous value exists
+							if col in last_known_values:
+								row[col] = last_known_values[col]
+				
+				updated_rows.append(row)
+
+		# Overwrite the original file with the filled data
+		with open(file_path, mode='w', encoding='utf-8', newline='') as f:
+			writer = csv.DictWriter(f, fieldnames=fieldnames)
+			writer.writeheader()
+			writer.writerows(updated_rows)
+		
 	
 	def run_script_new(script_location: str, output_location: str, temp_csv: bool= False,debug_mode: bool=False):
 		new_dir_name = Path(script_location).stem + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -2868,7 +2916,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		log_file=f"{output_location}/{file_name}.log"
 		save_all_logs(log_file)
 		delete_status_file(runner_control)
-		
+		autofill_csv_results(outpath)
 		if temp_csv:   
 			return file_name, output_location
 		else:
