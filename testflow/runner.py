@@ -1,4 +1,4 @@
-	#Version:2.0.4
+	#Version:2.0.5
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -318,6 +318,82 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		return variable_arrays
 
 	def replace_variables_with_current_values(line: str, variable_arrays: dict) -> str:
+			"""Replaces variables and handles CSV lookups with optional column indices."""
+			if not isinstance(line, str):
+				return line
+
+			# 1. Handle all standard variables first (${var})
+			# This turns <file>{${row}}{${col}} into <file>{1}{2}
+			var_matches = re.findall(r"\$\{([^}]+)\}", line)
+			for var_name in var_matches:
+				if var_name in variable_arrays:
+					current_value = variable_arrays[var_name].get('current_value', 'NULL')
+					pattern = re.compile(rf"\$\{{\s*{re.escape(var_name)}\s*\}}")
+					line = pattern.sub(str(current_value), line)
+
+			# 2. Handle CSV lookups: <file>{row}{col} or <file>{row}
+			# Group 1: filename, Group 2: row index, Group 3: optional column index
+			csv_pattern = r"<([^>]+)>\s*\{([\d\.]+)\}(?:\{([\d\.]+)\})?"
+			csv_matches = re.findall(csv_pattern, line)
+			
+			for file_name, row_str, col_str in csv_matches:
+				base_dir = os.path.dirname(os.path.abspath(__file__))
+				file_path = os.path.join(base_dir, file_name)
+				replacement_value = "NULL"
+				
+				try:
+					row_idx = int(float(row_str))
+					# Default to column 0 if the second {} is missing or empty
+					col_idx = int(float(col_str)) if col_str and col_str.strip() else 0
+					indices_valid = True
+				except ValueError:
+					log_print(f" \033[33mWarning: Invalid row/col index in {file_name}.\033[0m")
+					indices_valid = False
+
+				if indices_valid:
+					# File check and load
+					if not os.path.exists(file_path):
+						log_print(f" \033[41mError: CSV file '{file_name}' not found.\033[0m")
+						csv_cache[file_path] = None
+					else:
+						if file_path not in csv_cache or csv_cache[file_path] is None:
+							try:
+								with open(file_path, mode='r', encoding='utf-8-sig') as f:
+									# Store the full rows now, not just the first column
+									csv_cache[file_path] = [row for row in csv.reader(f)]
+							except Exception as e:
+								log_print(f" \033[41mError reading CSV '{file_name}': {e}\033[0m")
+								csv_cache[file_path] = None
+
+					file_data = csv_cache.get(file_path)
+					if file_data is not None:
+						# Check Row
+						if 0 <= row_idx < len(file_data):
+							row_data = file_data[row_idx]
+							# Check Column
+							if 0 <= col_idx < len(row_data):
+								val = row_data[col_idx]
+								if val and str(val).strip():
+									replacement_value = val
+								else:
+									log_print(f" \033[33mWarning: Empty cell at {row_idx}:{col_idx} in '{file_name}'.\033[0m")
+							else:
+								log_print(f" \033[41mError: Col index {col_idx} out of bounds for '{file_name}'.\033[0m")
+						else:
+							log_print(f" \033[41mError: Row index {row_idx} out of bounds for '{file_name}'.\033[0m")
+
+				# Reconstruct the exact string to replace
+				# If col_str existed, we match <file>{row}{col}, otherwise just <file>{row}
+				if col_str:
+					full_match_pattern = rf"<{re.escape(file_name)}>\s*\{{{re.escape(row_str)}\}}\s*\{{{re.escape(col_str)}\}}"
+				else:
+					full_match_pattern = rf"<{re.escape(file_name)}>\s*\{{{re.escape(row_str)}\}}"
+				
+				line = re.sub(full_match_pattern, str(replacement_value), line)
+			print(line)
+			return line
+
+	def xxreplace_variables_with_current_values(line: str, variable_arrays: dict) -> str:
 			"""Handles Variables and CSV lookups. Always replaces with NULL and prints error if file is missing."""
 			if not isinstance(line, str):
 				return line
