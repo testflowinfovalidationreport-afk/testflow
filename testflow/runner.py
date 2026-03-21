@@ -1,4 +1,4 @@
-	#Version:2.0.5
+	#Version:2.0.6
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -390,7 +390,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 					full_match_pattern = rf"<{re.escape(file_name)}>\s*\{{{re.escape(row_str)}\}}"
 				
 				line = re.sub(full_match_pattern, str(replacement_value), line)
-			print(line)
+			#print(line)
 			return line
 
 	def xxreplace_variables_with_current_values(line: str, variable_arrays: dict) -> str:
@@ -2711,8 +2711,129 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			writer = csv.DictWriter(f, fieldnames=fieldnames)
 			writer.writeheader()
 			writer.writerows(updated_rows)
+
+	def _get_aardvark_safe():
+		"""Internal helper to safely grab the Aardvark API and handle."""
+		try:
+			import aardvark_py as api
+			num_devices, ports = api.aa_find_devices(1)
+			if num_devices > 0:
+				handle = api.aa_open(ports[0])
+				if handle > 0:
+					return api, handle
+			return None, None
+		except ImportError:
+			return None, None
+
+	def aardvark_i2c_send(slave_addr_8bit, reg, data_byte, bitrate=100):
+		"""
+		Sends a single byte to a register. 
+		Handles 8-bit to 7-bit conversion automatically.
+		"""
+		api, handle = _get_aardvark_safe()
+		if not api: return False # Skip silently if no hardware
 		
-	
+		try:
+			api.aa_i2c_bitrate(handle, bitrate)
+			api.aa_i2c_pullup(handle, api.AA_I2C_PULLUP_BOTH)
+			
+			# Auto-convert 8-bit address to 7-bit
+			slave_7bit = slave_addr_8bit >> 1
+			data_out = api.array('B', [reg, data_byte])
+			
+			status = api.aa_i2c_write(handle, slave_7bit, api.AA_I2C_NO_FLAGS, data_out)
+			return status > 0
+		finally:
+			api.aa_close(handle)
+
+	def aardvark_i2c_read(slave_addr_8bit, reg, num_bytes=1, bitrate=100):
+		"""
+		Reads N bytes from a register.
+		Returns a list of bytes or None if hardware/device is missing.
+		"""
+		api, handle = _get_aardvark_safe()
+		if not api: return None
+		
+		try:
+			api.aa_i2c_bitrate(handle, bitrate)
+			api.aa_i2c_pullup(handle, api.AA_I2C_PULLUP_BOTH)
+			
+			slave_7bit = slave_addr_8bit >> 1
+			
+			# Write register address (Repeated Start)
+			api.aa_i2c_write(handle, slave_7bit, api.AA_I2C_NO_STOP, api.array('B', [reg]))
+			
+			# Read the data
+			count, data_in = api.aa_i2c_read(handle, slave_7bit, api.AA_I2C_NO_FLAGS, num_bytes)
+			return list(data_in) if count > 0 else None
+		finally:
+			api.aa_close(handle)		
+
+	def aardvark_set_bitrate(bitrate_khz):
+		"""Sets the I2C bitrate for the connected Aardvark."""
+		api, handle = _get_aardvark_safe() # Uses the safety helper from previous step
+		if not api: return False
+		try:
+			actual_bitrate = api.aa_i2c_bitrate(handle, bitrate_khz)
+			print(f"I2C Bitrate set to {actual_bitrate} kHz")
+			return True
+		finally:
+			api.aa_close(handle)
+
+	def aardvark_i2c_read_bytes(slave_addr_8bit, reg, num_bytes):
+		"""Reads multiple bytes from a specific register."""
+		api, handle = _get_aardvark_safe()
+		if not api: return None
+		try:
+			slave_7bit = slave_addr_8bit >> 1
+			# Write register address (No Stop for repeated start)
+			api.aa_i2c_write(handle, slave_7bit, api.AA_I2C_NO_STOP, api.array('B', [reg]))
+			# Read the data back
+			count, data_in = api.aa_i2c_read(handle, slave_7bit, api.AA_I2C_NO_FLAGS, num_bytes)
+			return list(data_in) if count > 0 else None
+		finally:
+			api.aa_close(handle)
+			
+	def process_command_string(input_text):
+		"""
+		Parses strings like:
+		- aardvark_s(0xD8, 0xD8, 0xFF) -> Send
+		- aardvark_rd(0xD8, 0x79, 2)   -> Read
+		- aardvark_br(400)             -> Bitrate
+		"""
+		# Pattern to match the function name and capture everything inside the brackets
+		pattern = r"(\w+)\((.*)\)"
+		match = re.search(pattern, input_text.strip())
+		
+		if not match:
+			return "Invalid Format"
+
+		func_name = match.group(1)
+		# Split arguments by comma and clean up whitespace/hex formatting
+		args = [int(a.strip(), 0) for a in match.group(2).split(',') if a.strip()]
+
+		try:
+			if func_name == "aardvark_s" and len(args) == 3:
+				# Usage: aardvark_s(addr, reg, data)
+				success = aardvark_i2c_send(args[0], args[1], args[2])
+				return f"Send Success: {success}"
+
+			elif func_name == "aardvark_rd" and len(args) == 3:
+				# Usage: aardvark_rd(addr, reg, num_bytes)
+				data = aardvark_i2c_read_bytes(args[0], args[1], args[2])
+				return f"Read Data: {data}"
+
+			elif func_name == "aardvark_br" and len(args) == 1:
+				# Usage: aardvark_br(bitrate)
+				success = aardvark_set_bitrate(args[0])
+				return f"Bitrate Update: {success}"
+
+			else:
+				return f"Unknown command or wrong number of arguments: {func_name}"
+
+		except Exception as e:
+			return f"Error executing {func_name}: {e}"	
+		
 	def run_script_new(script_location: str, output_location: str, temp_csv: bool= False,debug_mode: bool=False):
 		new_dir_name = Path(script_location).stem + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 		runner_control=output_location
@@ -2807,7 +2928,13 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 					equation=replace_variables_with_current_values(Current_line,variables)
 					variables[output_variable]['current_value']= eval_expr_after_equal(equation)
 					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:	 ",output_variable,"=",equation,"=",variables[output_variable]['current_value'])
-   
+			elif check_line_prefix(Current_line, "SER:"):
+				command=extract_prefixed_line(command, "SER: ")
+				if has_variable(command):
+				   command=replace_variables_with_current_values(command,variables)
+				   
+				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:	 ",process_command_string(command))
+					
 			elif check_line_prefix(Current_line, "CMD:"):
 				# Process a command to be sent to instrument or execute local action.
 				command=extract_prefixed_line(Current_line, "CMD:")
