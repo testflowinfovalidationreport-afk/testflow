@@ -1,4 +1,4 @@
-	#Version:2.0.6
+	#Version:2.0.7
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -2929,7 +2929,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 					variables[output_variable]['current_value']= eval_expr_after_equal(equation)
 					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]:	 ",output_variable,"=",equation,"=",variables[output_variable]['current_value'])
 			elif check_line_prefix(Current_line, "SER:"):
-				command=extract_prefixed_line(command, "SER: ")
+				command=extract_prefixed_line(Current_line, "SER: ")
 				if has_variable(command):
 				   command=replace_variables_with_current_values(command,variables)
 				   
