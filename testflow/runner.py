@@ -1,4 +1,4 @@
-	#Version:2.0.7
+	#Version:2.0.8
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -47,7 +47,7 @@ import serial
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:1.1.0"
+code_version= "Version:2.0.8"
 # Serial communication constants
 BAUDRATE = 115200
 
@@ -2843,7 +2843,10 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			print_big_testflow_banner()
 			log_print("Starting a script using ", code_version)  
 			
-		script_obj = parse_script_structured_v6(script_location)        
+		script_obj = parse_script_structured_v6(script_location) 
+		if not script_obj or "window" not in script_obj:
+			log_print("\033[31mERROR: Script is empty or malformed. Please check the workflow, refresh the code panel then resave the workflow before running.\033[0m")
+			return None # Exit the function early        
 		#print(json.dumps(script_obj, indent=2))
 		workflows_obi = parse_workflows_from_script(script_location, case_sensitive=False)        
 		#print("*************workflows_obi*****************")
