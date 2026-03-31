@@ -1,4 +1,4 @@
-	#Version:2.0.8
+	#Version:2.0.9
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -47,7 +47,7 @@ import serial
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:2.0.8"
+code_version= "Version:2.0.9"
 # Serial communication constants
 BAUDRATE = 115200
 
@@ -2810,7 +2810,17 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
 		func_name = match.group(1)
 		# Split arguments by comma and clean up whitespace/hex formatting
-		args = [int(a.strip(), 0) for a in match.group(2).split(',') if a.strip()]
+		new_args = []
+		for a in match.group(2).split(','):
+			clean_val = a.strip()
+			try:
+				# Try to convert to integer (handles 0x hex)
+				new_args.append(int(clean_val, 0))
+			except ValueError:
+				# If it's "0xYY", it hits this block instead of crashing
+				log_print(f"[ {(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))} ]: \033[33mWARNING: Invalid numeric value '{clean_val}' found. Keeping as string.\033[0m")
+				new_args.append(clean_val) 
+		args = new_args
 
 		try:
 			if func_name == "aardvark_s" and len(args) == 3:
