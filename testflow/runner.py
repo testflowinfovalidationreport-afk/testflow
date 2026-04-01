@@ -47,7 +47,7 @@ import serial
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:2.0.9"
+code_version= "TestFlow:2.0.9"
 # Serial communication constants
 BAUDRATE = 115200
 
