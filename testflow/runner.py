@@ -1,4 +1,4 @@
-	#Version:2.1.0
+	#Version:2.1.1
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -47,7 +47,7 @@ import serial
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:2.1.0"
+code_version= "Version:2.1.1"
 # Serial communication constants
 BAUDRATE = 115200
 
@@ -2996,32 +2996,32 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			#	 pause_message= extract_prefixed_line(Current_line, "MESSAGE:")
 			#	 show_message_dialog("Waiting you",pause_message)
 			elif check_line_prefix(Current_line, "PNG"):
-				# 1. Define the title ONCE and use it everywhere
-				action_column_title = f"{current_action}(N{node_info['node_number']}|A{action_count})"
-				
-				try:
-					command = extract_prefixed_line(Current_line, "PNG:")
-					image_name = f"{current_action}_{Data_line}"
-					image_path = create_unique_image_file(output_location, image_name)
-					
-					# Attempt to get image data
-					image_data = send_to_read_byte(INST_VISA, command)
-					
-					if image_data is not None:
-						fixed_image_data = validate_and_fix_png(image_data)
-						save_image_data(image_path, fixed_image_data)
-						
-						# Use the consistent title
-						update_csv_cell(outpath, Data_line, action_column_title, image_path)
-					else:
-						log_print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]: Warning: No image data received.")
-						# FIX: Use action_column_title here too!
-						update_csv_cell(outpath, Data_line, action_column_title, "ERROR: NO DATA")
-						
-				except Exception as e:
-					log_print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]: PNG Capture Failed -> {e}")
-					# FIX: Ensure the catch block also uses the correct column name
-					update_csv_cell(outpath, Data_line, action_column_title, "CAPTURE_FAILED")
+							# 1. Use the 'img' suffix to match the CSV generator's logic
+							action_column_title = f"{current_action}img(N{node_info['node_number']}|A{action_count})"
+							
+							try:
+									command = extract_prefixed_line(Current_line, "PNG:")
+									image_name = f"{current_action}_{Data_line}"
+									image_path = create_unique_image_file(output_location, image_name)
+									
+									# Attempt to get image data
+									image_data = send_to_read_byte(INST_VISA, command)
+									
+									if image_data is not None:
+										fixed_image_data = validate_and_fix_png(image_data)
+										save_image_data(image_path, fixed_image_data)
+										
+										# 2. Use the exact title defined above (no underscores!)
+										update_csv_cell(outpath, Data_line, action_column_title, image_path)
+									else:
+										log_print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]: Warning: No image data received.")
+										# 3. Stay consistent here too
+										update_csv_cell(outpath, Data_line, action_column_title, "ERROR: NO DATA")
+										
+							except Exception as e:
+								log_print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]: PNG Capture Failed -> {e}")
+								# 4. Use the same consistent title in the catch block
+								update_csv_cell(outpath, Data_line, action_column_title, "CAPTURE_FAILED")
 		
 								
 			elif check_line_prefix(Current_line, "SET"):
