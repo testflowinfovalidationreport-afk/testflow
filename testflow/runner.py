@@ -1,4 +1,4 @@
-	#Version:2.0.9
+	#Version:2.1.0
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -47,7 +47,7 @@ import serial
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "TestFlow:2.0.9"
+code_version= "Version:2.1.0"
 # Serial communication constants
 BAUDRATE = 115200
 
@@ -2995,35 +2995,34 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			#elif check_line_prefix(Current_line, "MESSAGE:"):
 			#	 pause_message= extract_prefixed_line(Current_line, "MESSAGE:")
 			#	 show_message_dialog("Waiting you",pause_message)
-				
 			elif check_line_prefix(Current_line, "PNG"):
-				action_column_title = f"{current_action}img(N{node_info['node_number']}|A{action_count})"
+				# 1. Define the title ONCE and use it everywhere
+				action_column_title = f"{current_action}(N{node_info['node_number']}|A{action_count})"
+				
 				try:
-						command = extract_prefixed_line(Current_line, "PNG:")
-						image_name = f"{current_action}_{Data_line}"
-						image_path = create_unique_image_file(output_location, image_name)
+					command = extract_prefixed_line(Current_line, "PNG:")
+					image_name = f"{current_action}_{Data_line}"
+					image_path = create_unique_image_file(output_location, image_name)
+					
+					# Attempt to get image data
+					image_data = send_to_read_byte(INST_VISA, command)
+					
+					if image_data is not None:
+						fixed_image_data = validate_and_fix_png(image_data)
+						save_image_data(image_path, fixed_image_data)
 						
-						# Attempt to get image data
-						image_data = send_to_read_byte(INST_VISA, command)
+						# Use the consistent title
+						update_csv_cell(outpath, Data_line, action_column_title, image_path)
+					else:
+						log_print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]: Warning: No image data received.")
+						# FIX: Use action_column_title here too!
+						update_csv_cell(outpath, Data_line, action_column_title, "ERROR: NO DATA")
 						
-						if image_data is not None:
-							fixed_image_data = validate_and_fix_png(image_data)
-							
-							# Save the image data to file
-							save_image_data(image_path, fixed_image_data)
-							
-							# Update CSV with the path
-							action_column_title = f"{current_action}_(N{node_info['node_number']}|A{action_count})"
-							update_csv_cell(outpath, Data_line, action_column_title, image_path)
-						else:
-							log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: : Warning: No image data received (Device likely disconnected).")
-							update_csv_cell(outpath, Data_line, f"{current_action}img", "ERROR: NO DATA")
-							
 				except Exception as e:
-					# This catches VISA errors or connection timeouts without stopping the script
-					log_print(f"[ {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} ]: PNG Capture Failed -> {e}")
-					# Optionally log "FAILED" to the CSV so you know why the cell is empty
+					log_print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]: PNG Capture Failed -> {e}")
+					# FIX: Ensure the catch block also uses the correct column name
 					update_csv_cell(outpath, Data_line, action_column_title, "CAPTURE_FAILED")
+		
 								
 			elif check_line_prefix(Current_line, "SET"):
 				command=extract_prefixed_line(Current_line, "SET:")
