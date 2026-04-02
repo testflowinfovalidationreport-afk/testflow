@@ -195,7 +195,9 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 	# =================================================================================
 	# Variables Parsing and Replacement
 	# =================================================================================
-	def parse_variable_ranges(lines: list[str], start_index: int) -> tuple[str, list[float]]:
+	from typing import List, Tuple
+
+	def parse_variable_ranges(lines: List[str], start_index: int) -> Tuple[str, List[float]]:
 		"""Parses Variable/Range blocks in the script."""
 		if not lines[start_index].strip().startswith("Variable:"):
 			raise ValueError("Line at start_index does not start with 'Variable:'")
