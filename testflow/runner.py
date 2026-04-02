@@ -1,4 +1,4 @@
-	#Version:2.1.8
+	#Version:2.1.9
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -47,7 +47,7 @@ import serial
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:2.1.8"
+code_version= "Version:2.1.9"
 # Serial communication constants
 BAUDRATE = 115200
 
@@ -2758,7 +2758,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 				num_devices, ports = api.aa_find_devices(16)
 				
 				if num_devices <= 0:
-					log_print(" \033[41m[Aardvark Scanner]: No hardware detected on any USB port.\033[0m")
+					log_print(f"[ {(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))} ]:  \033[41m[Aardvark Scanner]: No hardware detected on any USB port.\033[0m")
 					return None, None
 
 				# 2. Diagnostic Scan: Check the status of every found port
@@ -2785,7 +2785,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
 				# 3. Print the full scanner report in one clean message
 				report_msg = " | ".join(scan_results)
-				log_print(f" \033[36m[Aardvark Scanner]: Found {num_devices} device(s) -> {report_msg}\033[0m")
+				log_print(f" [ {(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))} ]: \033[36m[Aardvark Scanner]: Found {num_devices} device(s) -> {report_msg}\033[0m")
 
 				# 4. Finalize the connection
 				if final_handle and final_handle > 0:
@@ -2793,11 +2793,11 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 					_AA_API, _AA_HANDLE = api, final_handle
 					return api, final_handle
 				
-				log_print(" \033[41m[Aardvark Scanner]: Failed to secure an available handle.\033[0m")
+				log_print(f"[ {(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))} ]: \033[41m[Aardvark Scanner]: Failed to secure an available handle.\033[0m")
 				return None, None
 					
 			except Exception as e:
-				log_print(f" \033[41m[Aardvark Scanner]: Critical Driver Error -> {e}\033[0m")
+				log_print(f"[ {(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))} ]:  \033[41m[Aardvark Scanner]: Critical Driver Error -> {e}\033[0m")
 				return None, None
 
 
