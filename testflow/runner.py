@@ -478,7 +478,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			for file_name, index_str in csv_matches:
 				base_dir = os.path.dirname(os.path.abspath(__file__))
 				file_path = os.path.join(base_dir, file_name)
-				replacement_value = "NULL"  # Start with NULL as default
+				replacement_value = "NULL"	# Start with NULL as default
 				
 				# Attempt to convert index
 				try:
@@ -842,12 +842,12 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		"""Prints big ASCII banner for TestFlow start."""
 		# Print TestFlow ASCII art banner and legal/info lines using the unified logger
 		log_print_panner(r"""
-████████╗███████╗███████╗████████╗      ███████╗██╗      ██████╗ ██╗    ██╗
-╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝      ██╔════╝██║     ██╔═══██╗██║    ██║
-   ██║   █████╗  ███████╗   ██║    ███  █████╗  ██║     ██║   ██║██║ █╗ ██║
-   ██║   ██╔══╝  ╚════██║   ██║         ██╔══╝  ██║     ██║   ██║██║███╗██║
-   ██║   ███████╗███████║   ██║         ██╗     ███████╗╚██████╔╝╚███╔███╔╝
-   ╚═╝   ╚══════╝╚══════╝   ╚═╝         ╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝ 
+████████╗███████╗███████╗████████╗		███████╗██╗		 ██████╗ ██╗	██╗
+╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝		██╔════╝██║		██╔═══██╗██║	██║
+   ██║	 █████╗	 ███████╗	██║	   ███	█████╗	██║		██║	  ██║██║ █╗ ██║
+   ██║	 ██╔══╝	 ╚════██║	██║			██╔══╝	██║		██║	  ██║██║███╗██║
+   ██║	 ███████╗███████║	██║			██╗		███████╗╚██████╔╝╚███╔███╔╝
+   ╚═╝	 ╚══════╝╚══════╝	╚═╝			╚═╝		╚══════╝ ╚═════╝  ╚══╝╚══╝ 
 		""")
 		# Visual separators and centered disclaimer text
 		log_print_panner("=" * 80)
@@ -875,12 +875,12 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		"""
 		# Print a completion banner to indicate the end of a TestFlow run
 		log_print_panner(r"""
-████████╗███████╗███████╗████████╗     ██████╗   ██████╗ ███╗   ██╗███████╗
-╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝
-   ██║   █████╗  ███████╗   ██║        ██║   ██║██║   ██║██╔██╗ ██║█████╗  
-   ██║   ██╔══╝  ╚════██║   ██║        ██║   ██║██║   ██║██║╚██╗██║██╔══╝  
-   ██║   ███████╗███████║   ██║        ██████ ╔╝╚██████╔╝██║ ╚████║███████╗
-   ╚═╝   ╚══════╝╚══════╝   ╚═╝          ╚════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝
+████████╗███████╗███████╗████████╗	   ██████╗	 ██████╗ ███╗	██╗███████╗
+╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝	   ██╔═══██╗██╔═══██╗████╗	██║██╔════╝
+   ██║	 █████╗	 ███████╗	██║		   ██║	 ██║██║	  ██║██╔██╗ ██║█████╗  
+   ██║	 ██╔══╝	 ╚════██║	██║		   ██║	 ██║██║	  ██║██║╚██╗██║██╔══╝  
+   ██║	 ███████╗███████║	██║		   ██████ ╔╝╚██████╔╝██║ ╚████║███████╗
+   ╚═╝	 ╚══════╝╚══════╝	╚═╝			 ╚════╝	 ╚═════╝ ╚═╝  ╚═══╝╚══════╝
 			""")
 
 	def print_big_teststopped_banner():
@@ -889,12 +889,12 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		"""
 		# Print a banner to indicate the test was stopped manually or by error
 		log_print_panner(r"""
-	████████╗███████╗███████╗████████╗     ███████╗████████╗ ██████╗ ██████╗ ██████╗ ███████╗██████╗  
-	╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝     ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔══██╗██╔════╝██╔═══██╗
-	   ██║   █████╗  ███████╗   ██║        ███████╗   ██║   ██║   ██║██████╔╝██████╔╝█████╗  ██║   ██║
-	   ██║   ██╔══╝  ╚════██║   ██║        ╚════██║   ██║   ██║   ██║██╔══   ██╔══   ██╔══╝  ██║   ██║
-	   ██║   ███████╗███████║   ██║        ███████║   ██║   ╚██████╔╝██║     ██║     ███████╗██████ ╔╝
-	   ╚═╝   ╚══════╝╚══════╝   ╚═╝        ╚══════╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝     ╚══════╝  ╚════╝
+	████████╗███████╗███████╗████████╗	   ███████╗████████╗ ██████╗ ██████╗ ██████╗ ███████╗██████╗  
+	╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝	   ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔══██╗██╔════╝██╔═══██╗
+	   ██║	 █████╗	 ███████╗	██║		   ███████╗	  ██║	██║	  ██║██████╔╝██████╔╝█████╗	 ██║   ██║
+	   ██║	 ██╔══╝	 ╚════██║	██║		   ╚════██║	  ██║	██║	  ██║██╔══	 ██╔══	 ██╔══╝	 ██║   ██║
+	   ██║	 ███████╗███████║	██║		   ███████║	  ██║	╚██████╔╝██║	 ██║	 ███████╗██████ ╔╝
+	   ╚═╝	 ╚══════╝╚══════╝	╚═╝		   ╚══════╝	  ╚═╝	 ╚═════╝ ╚═╝	 ╚═╝	 ╚══════╝  ╚════╝
 			""")
 
 	def parse_node_line(line: str) -> dict:
@@ -1605,8 +1605,8 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		nlines = [norm(L) for L in lines]
 
 		START = norm("#START_SCRIPT")
-		END   = norm("#END_SCRIPT")
-		WF    = norm("#START_WORKFLOW")
+		END	  = norm("#END_SCRIPT")
+		WF	  = norm("#START_WORKFLOW")
 
 		# Find START_SCRIPT
 		start_idx = next((i for i, L in enumerate(nlines, start=1) if START in L), None)
@@ -1633,14 +1633,14 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
 		flags = 0 if case_sensitive else re.IGNORECASE
 		re_node_start = re.compile(r"#NODE\s*(\d+)\b(?!_IF)", flags)
-		re_node_end   = re.compile(r"#END_NODE\s*(\d+)\b", flags)
+		re_node_end	  = re.compile(r"#END_NODE\s*(\d+)\b", flags)
 		re_loop_start = re.compile(r"Loop_start\s*\(\s*(\d+)\s*\)", flags)
-		re_loop_end   = re.compile(r"Loop_end\s*\(\s*(\d+)\s*\)", flags)
+		re_loop_end	  = re.compile(r"Loop_end\s*\(\s*(\d+)\s*\)", flags)
 
 		re_node_if_start = re.compile(r"#NODE\s*(\d+)_IF\s*\((.*?)\)\s*$", flags)
-		re_end_if        = re.compile(r"#END_IF\b", flags)
-		re_true_line     = re.compile(r"^\s*TRUE\s*:\s*(N|LE)\s*(\d+)\s*$", flags)
-		re_false_line    = re.compile(r"^\s*FALSE\s*:\s*(N|LE)\s*(\d+)\s*$", flags)
+		re_end_if		 = re.compile(r"#END_IF\b", flags)
+		re_true_line	 = re.compile(r"^\s*TRUE\s*:\s*(N|LE)\s*(\d+)\s*$", flags)
+		re_false_line	 = re.compile(r"^\s*FALSE\s*:\s*(N|LE)\s*(\d+)\s*$", flags)
 
 		re_next_after_endnode = re.compile(r"#END_NODE\s*(\d+).*?\(\s*(N|LE)\s*(\d+)\s*\)", flags)
 		
@@ -1662,10 +1662,10 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
 		for lineno in range(start_idx, end_idx + 1):
 			raw = lines[lineno-1]
-			L   = nlines[lineno-1]
+			L	= nlines[lineno-1]
 
 			if START in L: script_markers["#START_SCRIPT"].append(lineno)
-			if WF in L:    script_markers["#START_WORKFLOW"].append(lineno)
+			if WF in L:	   script_markers["#START_WORKFLOW"].append(lineno)
 			if norm("#END_WORKFLOW") in L: script_markers["#END_WORKFLOW"].append(lineno)
 			if END in L:   script_markers["#END_SCRIPT"].append(lineno)
 
@@ -2801,7 +2801,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		Parses strings like:
 		- aardvark_s(0xD8, 0xD8, 0xFF) -> Send
 		- aardvark_rd(0xD8, 0x79, 2)   -> Read
-		- aardvark_br(400)             -> Bitrate
+		- aardvark_br(400)			   -> Bitrate
 		"""
 		# Pattern to match the function name and capture everything inside the brackets
 		pattern = r"(\w+)\((.*)\)"
@@ -2849,18 +2849,18 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 	def run_script_new(script_location: str, output_location: str, temp_csv: bool= False,debug_mode: bool=False):
 		new_dir_name = Path(script_location).stem + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 		runner_control=output_location
-		output_location=create_out_directory(output_location,new_dir_name)        
+		output_location=create_out_directory(output_location,new_dir_name)		  
 		# Print a large TestFlow banner at the start of execution.
 		if not temp_csv:
 			print_big_testflow_banner()
-			log_print("Starting a script using ", code_version)  
+			log_print("Starting a script using ", code_version)	 
 			
 		script_obj = parse_script_structured_v6(script_location) 
 		if not script_obj or "window" not in script_obj:
 			log_print("\033[31mERROR: Script is empty or malformed. Please check the workflow, refresh the code panel then resave the workflow before running.\033[0m")
-			return None # Exit the function early        
+			return None # Exit the function early		 
 		#print(json.dumps(script_obj, indent=2))
-		workflows_obi = parse_workflows_from_script(script_location, case_sensitive=False)        
+		workflows_obi = parse_workflows_from_script(script_location, case_sensitive=False)		  
 		#print("*************workflows_obi*****************")
 		#print(json.dumps(workflows_obi, indent=2))
 		#print("*************first_workflow*****************")
@@ -2876,19 +2876,19 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		next_script_line=1
 		Data_line=1
 		running_script= True
-		just_ended_loop= False  
+		just_ended_loop= False	
 		node_id = 1
 		INST_VISA=""
 		current_action=""
 		write_status(fr"{runner_control}\status.txt","Running")
 		status = check_status_file(runner_control)
 		# =============Create the CSV file for results, and extract header map================
-		outpath,file_name, header_map= create_csv_file(output_location,script_location,temp_csv)        
+		outpath,file_name, header_map= create_csv_file(output_location,script_location,temp_csv)		
 		script_n_of_lines = count_script_lines(script_location)
 		print("******************************************************** Total steps ",compute_loop_weight(script_location))
 		# Extract all variable arrays defined in the script.
 		variables = get_all_variable_arrays(script_location,script_obj["window"].get(str("start_line"), {}),script_obj["window"].get(str("end_line"), {}))
-		my_loops=[1,1,1,1,1,1,1,1,1,1]        
+		my_loops=[1,1,1,1,1,1,1,1,1,1]		  
 		while(running_script):
 			Current_line= read_line_from_script(script_location, next_script_line)
 			#print(Current_line)
@@ -3067,7 +3067,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 				if my_loops[int(LE_num)]>=max_iterations:
 					#endloop
 					my_loops[int(LE_num)]=1
-					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","    ...................................    ")
+					log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","	...................................	   ")
 					if(nxt_type=="X"):
 						break
 				else:
@@ -3118,7 +3118,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 				current_node = script_obj["nodes"].get(str(node_id), {})   
 				next_node= current_node.get("next")	
 				
-			next_script_line=next_script_line+1       
+			next_script_line=next_script_line+1		  
 
 		if status=="stop":
 			print_big_teststopped_banner()	
