@@ -1,4 +1,4 @@
-	#Version:2.1.5
+	#Version:2.1.6
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -47,7 +47,7 @@ import serial
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:2.1.5"
+code_version= "Version:2.1.6"
 # Serial communication constants
 BAUDRATE = 115200
 
@@ -255,7 +255,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 	def get_all_variable_arrays(
 		script_path: str,
 		start_line: int = 1,
-		end_line: int | None = None,
+		end_line: Optional[int] = None,
 		) -> Dict[str, Dict[str, Any]]:
 		"""
 		Scans the script and builds a dictionary of all variables and their values,
