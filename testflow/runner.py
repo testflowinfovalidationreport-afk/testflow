@@ -1,4 +1,4 @@
-	#Version:2.1.7
+	#Version:2.1.8
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -47,13 +47,14 @@ import serial
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:2.1.7"
+code_version= "Version:2.1.8"
 # Serial communication constants
 BAUDRATE = 115200
 
 # Global in-memory log list to store execution logs
 _TESTFLOW_LOGS = []
-
+_AA_HANDLE = None
+_AA_API = None
 stop_event = threading.Event()
 pause_event = threading.Event()
 debug_event = threading.Event()
@@ -2742,73 +2743,107 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			writer.writeheader()
 			writer.writerows(updated_rows)
 
-	def _get_aardvark_safe():
-		"""Internal helper to safely grab the Aardvark API and handle."""
-		try:
-			import aardvark_py as api
-			num_devices, ports = api.aa_find_devices(1)
-			if num_devices > 0:
-				handle = api.aa_open(ports[0])
-				if handle > 0:
-					return api, handle
-			return None, None
-		except ImportError:
-			return None, None
+	def _get_aardvark_safe(target_port: int = 0):
+			"""
+			Scans all USB ports for Aardvark devices and logs their status.
+			Returns the API and handle for the first available (or target) device.
+			"""
+			global _AA_HANDLE, _AA_API
+			if _AA_HANDLE is not None and _AA_HANDLE > 0:
+				return _AA_API, _AA_HANDLE
+
+			try:
+				import aardvark_py as api
+				# 1. Find all physical devices connected to USB
+				num_devices, ports = api.aa_find_devices(16)
+				
+				if num_devices <= 0:
+					log_print(" \033[41m[Aardvark Scanner]: No hardware detected on any USB port.\033[0m")
+					return None, None
+
+				# 2. Diagnostic Scan: Check the status of every found port
+				scan_results = []
+				final_handle = None
+				
+				for p in ports:
+					# Attempt to open to check if it's busy
+					test_handle = api.aa_open(p)
+					if test_handle > 0:
+						status = "READY (Available)"
+						# If this is our target (or we have no target yet), keep this handle
+						if final_handle is None and (target_port == 0 or p == target_port):
+							final_handle = test_handle
+						else:
+							# Otherwise close it so we don't leak handles during the scan
+							api.aa_close(test_handle)
+					elif test_handle == -1: # AA_UNABLE_TO_OPEN
+						status = "BUSY (Locked by another program)"
+					else:
+						status = f"ERROR (Code: {test_handle})"
+					
+					scan_results.append(f"Port {p}: {status}")
+
+				# 3. Print the full scanner report in one clean message
+				report_msg = " | ".join(scan_results)
+				log_print(f" \033[36m[Aardvark Scanner]: Found {num_devices} device(s) -> {report_msg}\033[0m")
+
+				# 4. Finalize the connection
+				if final_handle and final_handle > 0:
+					api.aa_configure(final_handle, api.AA_CONFIG_GPIO_I2C)
+					_AA_API, _AA_HANDLE = api, final_handle
+					return api, final_handle
+				
+				log_print(" \033[41m[Aardvark Scanner]: Failed to secure an available handle.\033[0m")
+				return None, None
+					
+			except Exception as e:
+				log_print(f" \033[41m[Aardvark Scanner]: Critical Driver Error -> {e}\033[0m")
+				return None, None
+
 
 	def aardvark_i2c_send(slave_addr_8bit, reg, data_byte, bitrate=100):
-		"""
-		Sends a single byte to a register. 
-		Handles 8-bit to 7-bit conversion automatically.
-		"""
+		from array import array
 		api, handle = _get_aardvark_safe()
-		if not api: return False # Skip silently if no hardware
+		if not api or handle <= 0: return False
 		
 		try:
 			api.aa_i2c_bitrate(handle, bitrate)
 			api.aa_i2c_pullup(handle, api.AA_I2C_PULLUP_BOTH)
-			
-			# Auto-convert 8-bit address to 7-bit
 			slave_7bit = slave_addr_8bit >> 1
-			data_out = api.array('B', [reg, data_byte])
-			
+			data_out = array('B', [reg, data_byte])
 			status = api.aa_i2c_write(handle, slave_7bit, api.AA_I2C_NO_FLAGS, data_out)
 			return status > 0
-		finally:
-			api.aa_close(handle)
+		except Exception as e:
+			log_print(f"Aardvark Write Error: {e}")
+			return False
 
 	def aardvark_i2c_read(slave_addr_8bit, reg, num_bytes=1, bitrate=100):
-		"""
-		Reads N bytes from a register.
-		Returns a list of bytes or None if hardware/device is missing.
-		"""
+		from array import array
 		api, handle = _get_aardvark_safe()
-		if not api: return None
+		if not api or handle <= 0: return None
 		
 		try:
 			api.aa_i2c_bitrate(handle, bitrate)
 			api.aa_i2c_pullup(handle, api.AA_I2C_PULLUP_BOTH)
-			
 			slave_7bit = slave_addr_8bit >> 1
 			
-			# Write register address (Repeated Start)
-			api.aa_i2c_write(handle, slave_7bit, api.AA_I2C_NO_STOP, api.array('B', [reg]))
-			
-			# Read the data
+			# Write register address (No Stop for repeated start)
+			api.aa_i2c_write(handle, slave_7bit, api.AA_I2C_NO_STOP, array('B', [reg]))
+			# Read the data back
 			count, data_in = api.aa_i2c_read(handle, slave_7bit, api.AA_I2C_NO_FLAGS, num_bytes)
 			return list(data_in) if count > 0 else None
-		finally:
-			api.aa_close(handle)		
+		except Exception as e:
+			log_print(f"Aardvark Read Error: {e}")
+			return None
 
 	def aardvark_set_bitrate(bitrate_khz):
-		"""Sets the I2C bitrate for the connected Aardvark."""
-		api, handle = _get_aardvark_safe() # Uses the safety helper from previous step
-		if not api: return False
+		api, handle = _get_aardvark_safe()
+		if not api or handle <= 0: return False
 		try:
 			actual_bitrate = api.aa_i2c_bitrate(handle, bitrate_khz)
-			print(f"I2C Bitrate set to {actual_bitrate} kHz")
 			return True
-		finally:
-			api.aa_close(handle)
+		except Exception:
+			return False
 
 	def aardvark_i2c_read_bytes(slave_addr_8bit, reg, num_bytes):
 		"""Reads multiple bytes from a specific register."""
@@ -2873,7 +2908,11 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
 		except Exception as e:
 			return f"Error executing {func_name}: {e}"	
-		
+	def close_aardvark_global():
+		global _AA_HANDLE, _AA_API
+		if _AA_HANDLE and _AA_HANDLE > 0:
+			_AA_API.aa_close(_AA_HANDLE)
+			_AA_HANDLE = None		
 	def run_script_new(script_location: str, output_location: str, temp_csv: bool= False,debug_mode: bool=False):
 		new_dir_name = Path(script_location).stem + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 		runner_control=output_location
@@ -3161,6 +3200,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		# Save logs to file.
 		log_file=f"{output_location}/{file_name}.log"
 		save_all_logs(log_file)
+		close_aardvark_global()
 		delete_status_file(runner_control)
 		autofill_csv_results(outpath)
 		if temp_csv:   
