@@ -1,4 +1,4 @@
-	#Version:2.1.6
+	#Version:2.1.7
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -47,7 +47,7 @@ import serial
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:2.1.6"
+code_version= "Version:2.1.7"
 # Serial communication constants
 BAUDRATE = 115200
 
@@ -835,19 +835,16 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
 
 		
-	# =================================================================================
-	# ASCII Banners
-	# =================================================================================
 	def print_big_testflow_banner():
 		"""Prints big ASCII banner for TestFlow start."""
 		# Print TestFlow ASCII art banner and legal/info lines using the unified logger
 		log_print_panner(r"""
-████████╗███████╗███████╗████████╗		███████╗██╗		 ██████╗ ██╗	██╗
-╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝		██╔════╝██║		██╔═══██╗██║	██║
-   ██║	 █████╗	 ███████╗	██║	   ███	█████╗	██║		██║	  ██║██║ █╗ ██║
-   ██║	 ██╔══╝	 ╚════██║	██║			██╔══╝	██║		██║	  ██║██║███╗██║
-   ██║	 ███████╗███████║	██║			██╗		███████╗╚██████╔╝╚███╔███╔╝
-   ╚═╝	 ╚══════╝╚══════╝	╚═╝			╚═╝		╚══════╝ ╚═════╝  ╚══╝╚══╝ 
+████████╗███████╗███████╗████████╗      ███████╗██╗      ██████╗ ██╗    ██╗
+╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝      ██╔════╝██║     ██╔═══██╗██║    ██║
+   ██║   █████╗  ███████╗   ██║    ███  █████╗  ██║     ██║   ██║██║ █╗ ██║
+   ██║   ██╔══╝  ╚════██║   ██║         ██╔══╝  ██║     ██║   ██║██║███╗██║
+   ██║   ███████╗███████║   ██║         ██╗     ███████╗╚██████╔╝╚███╔███╔╝
+   ╚═╝   ╚══════╝╚══════╝   ╚═╝         ╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝ 
 		""")
 		# Visual separators and centered disclaimer text
 		log_print_panner("=" * 80)
@@ -875,12 +872,12 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		"""
 		# Print a completion banner to indicate the end of a TestFlow run
 		log_print_panner(r"""
-████████╗███████╗███████╗████████╗	   ██████╗	 ██████╗ ███╗	██╗███████╗
-╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝	   ██╔═══██╗██╔═══██╗████╗	██║██╔════╝
-   ██║	 █████╗	 ███████╗	██║		   ██║	 ██║██║	  ██║██╔██╗ ██║█████╗  
-   ██║	 ██╔══╝	 ╚════██║	██║		   ██║	 ██║██║	  ██║██║╚██╗██║██╔══╝  
-   ██║	 ███████╗███████║	██║		   ██████ ╔╝╚██████╔╝██║ ╚████║███████╗
-   ╚═╝	 ╚══════╝╚══════╝	╚═╝			 ╚════╝	 ╚═════╝ ╚═╝  ╚═══╝╚══════╝
+████████╗███████╗███████╗████████╗     ██████╗   ██████╗ ███╗   ██╗███████╗
+╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝     ██╔═══██╗██╔═══██╗████╗  ██║██╔════╝
+   ██║   █████╗  ███████╗   ██║        ██║   ██║██║   ██║██╔██╗ ██║█████╗  
+   ██║   ██╔══╝  ╚════██║   ██║        ██║   ██║██║   ██║██║╚██╗██║██╔══╝  
+   ██║   ███████╗███████║   ██║        ██████ ╔╝╚██████╔╝██║ ╚████║███████╗
+   ╚═╝   ╚══════╝╚══════╝   ╚═╝          ╚════╝  ╚═════╝ ╚═╝  ╚═══╝╚══════╝
 			""")
 
 	def print_big_teststopped_banner():
@@ -889,13 +886,14 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		"""
 		# Print a banner to indicate the test was stopped manually or by error
 		log_print_panner(r"""
-	████████╗███████╗███████╗████████╗	   ███████╗████████╗ ██████╗ ██████╗ ██████╗ ███████╗██████╗  
-	╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝	   ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔══██╗██╔════╝██╔═══██╗
-	   ██║	 █████╗	 ███████╗	██║		   ███████╗	  ██║	██║	  ██║██████╔╝██████╔╝█████╗	 ██║   ██║
-	   ██║	 ██╔══╝	 ╚════██║	██║		   ╚════██║	  ██║	██║	  ██║██╔══	 ██╔══	 ██╔══╝	 ██║   ██║
-	   ██║	 ███████╗███████║	██║		   ███████║	  ██║	╚██████╔╝██║	 ██║	 ███████╗██████ ╔╝
-	   ╚═╝	 ╚══════╝╚══════╝	╚═╝		   ╚══════╝	  ╚═╝	 ╚═════╝ ╚═╝	 ╚═╝	 ╚══════╝  ╚════╝
+	████████╗███████╗███████╗████████╗     ███████╗████████╗ ██████╗ ██████╗ ██████╗ ███████╗██████╗  
+	╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝     ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔══██╗██╔════╝██╔═══██╗
+	   ██║   █████╗  ███████╗   ██║        ███████╗   ██║   ██║   ██║██████╔╝██████╔╝█████╗  ██║   ██║
+	   ██║   ██╔══╝  ╚════██║   ██║        ╚════██║   ██║   ██║   ██║██╔══   ██╔══   ██╔══╝  ██║   ██║
+	   ██║   ███████╗███████║   ██║        ███████║   ██║   ╚██████╔╝██║     ██║     ███████╗██████ ╔╝
+	   ╚═╝   ╚══════╝╚══════╝   ╚═╝        ╚══════╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝     ╚══════╝  ╚════╝
 			""")
+
 
 	def parse_node_line(line: str) -> dict:
 		"""
@@ -1379,8 +1377,38 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			# If any error occurs during log saving, print error message.
 			log_print(f"\033[31m[ERROR] Failed to save logs: {e}\033[0m")
 
-
 	def send_to_read_byte(visa_address: str, query: str):
+			"""
+			Sends a SCPI query to the instrument at `visa_address` and returns the reply.
+			Ensures a large timeout and raw reading for binary image data.
+			"""
+			import pyvisa
+			import time
+			try:
+				rm = pyvisa.ResourceManager()
+				instrument = rm.open_resource(visa_address)
+				
+				# FIX 1: Set a large timeout (30 seconds) directly on the instrument object
+				# This prevents "Timeout expired" errors during slow image transfers.
+				instrument.timeout = 30000 
+
+				# For binary image queries
+				instrument.write(query)
+				
+				# FIX 2: Small pause to allow the instrument to populate its output buffer
+				time.sleep(0.5)
+				
+				# This returns raw bytes, ignoring "End of Line" characters in binary data
+				reply = instrument.read_raw()
+				
+				instrument.close()
+				return reply
+			except Exception as e:
+				timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+				log_print(f"[ {timestamp} ]: \033[41mTestFlow says Error: {e}\033[0m")
+				return None
+				
+	def xsend_to_read_byte(visa_address: str, query: str):
 		"""
 		Sends a SCPI query to the instrument at `visa_address` and returns the reply.
 		If expecting binary data (e.g., image), returns bytes.
@@ -3002,6 +3030,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 							action_column_title = f"{current_action}img(N{node_info['node_number']}|A{action_count})"
 							
 							try:
+									
 									command = extract_prefixed_line(Current_line, "PNG:")
 									image_name = f"{current_action}_{Data_line}"
 									image_path = create_unique_image_file(output_location, image_name)
@@ -3024,7 +3053,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 								log_print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]: PNG Capture Failed -> {e}")
 								# 4. Use the same consistent title in the catch block
 								update_csv_cell(outpath, Data_line, action_column_title, "CAPTURE_FAILED")
-		
+							
 								
 			elif check_line_prefix(Current_line, "SET"):
 				command=extract_prefixed_line(Current_line, "SET:")
