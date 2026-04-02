@@ -1,4 +1,4 @@
-	#Version:2.1.4
+	#Version:2.1.5
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -13,7 +13,7 @@
 	#									 © TestFlow
 	#================================================================================
 	
-
+from __future__ import annotations
 import re
 import time
 import sys
@@ -28,7 +28,7 @@ from datetime import datetime
 from typing import Dict, List, Any
 from typing import Optional, Dict, Any
 import msvcrt  # Windows only
-from __future__ import annotations
+
 # Global cache for CSV data
 csv_cache = {}
 
@@ -47,7 +47,7 @@ import serial
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:2.1.4"
+code_version= "Version:2.1.5"
 # Serial communication constants
 BAUDRATE = 115200
 
