@@ -1,4 +1,4 @@
-	#Version:2.2.0
+	#Version:2.2.1
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -49,7 +49,7 @@ import serial
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:2.2.0"
+code_version= "Version:2.2.1"
 # Serial communication constants
 BAUDRATE = 115200
 
@@ -2984,8 +2984,81 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 				increment_step()
 				action_count=0
 				node_info=parse_node_line(Current_line)
-				
+
 				log_print("[",(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"]: ","Node[", node_info['node_number'],"]	  " ,node_info['node_type'],"	" ,node_info['instrument_name'],"	" ,node_info['manufacturer'])
+
+				if node_info['node_type'].strip().lower() == 'python':
+					# Collect INPUTS/OUTPUTs lines until #END_NODE
+					py_inputs_line = ""
+					py_outputs_line = ""
+					py_scan = next_script_line + 1
+					while py_scan <= script_n_of_lines:
+						py_line = read_line_from_script(script_location, py_scan)
+						if py_line is None or check_line_prefix(py_line, "#END_NODE"):
+							next_script_line = py_scan
+							break
+						if check_line_prefix(py_line, "INPUTS:"):
+							py_inputs_line = extract_prefixed_line(py_line, "INPUTS:")
+						elif check_line_prefix(py_line, "OUTPUTs:") or check_line_prefix(py_line, "OUTPUTS:"):
+							py_outputs_line = py_line.split(":", 1)[1].strip()
+						py_scan += 1
+
+					# Build the external module path: N<node_number>.py next to the script
+					py_module_path = os.path.join(os.path.dirname(os.path.abspath(script_location)),
+					                              f"N{node_info['node_number']}.py")
+
+					if not os.path.exists(py_module_path):
+						log_print(f"[ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ]: \033[33mWarning: Python module not found: {py_module_path}\033[0m")
+					else:
+						import importlib.util as _ilu
+						_py_spec = _ilu.spec_from_file_location(f"N{node_info['node_number']}", py_module_path)
+						_py_mod = _ilu.module_from_spec(_py_spec)
+						_py_spec.loader.exec_module(_py_mod)
+
+						# Parse INPUTS: int arg1=5, arg2=${Freq}  -> positional args list
+						py_call_args = []
+						if py_inputs_line:
+							for _part in py_inputs_line.split(","):
+								_part = _part.strip()
+								# strip optional type prefix (e.g. "int arg1=5" -> "arg1=5")
+								if " " in _part:
+									_part = _part.split(" ", 1)[1].strip()
+								# resolve ${vars} in the value side
+								if "=" in _part:
+									_val_str = _part.split("=", 1)[1].strip()
+								else:
+									_val_str = _part
+								if has_variable(_val_str):
+									_val_str = replace_variables_with_current_values(_val_str, variables)
+								# try numeric conversion, else keep as string
+								try:
+									_val = int(_val_str)
+								except ValueError:
+									try:
+										_val = float(_val_str)
+									except ValueError:
+										_val = _val_str
+								py_call_args.append(_val)
+
+						# Parse OUTPUTs: result=${tscale}  -> output variable name
+						py_output_var = None
+						if py_outputs_line:
+							_om = re.search(r"\$\{([^}]+)\}", py_outputs_line)
+							if _om:
+								py_output_var = _om.group(1).strip()
+
+						log_print(f"[ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ]: Calling {py_module_path} main({py_call_args})")
+						try:
+							py_result = _py_mod.main(*py_call_args)
+							if py_output_var is not None:
+								if py_output_var in variables:
+									variables[py_output_var]['current_value'] = py_result
+								else:
+									variables[py_output_var] = {'values': [py_result], 'current_value': py_result}
+								log_print(f"[ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ]: {py_output_var} = {py_result}")
+						except Exception as _py_ex:
+							log_print(f"[ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ]: \033[41mError in Python node {node_info['node_number']}: {_py_ex}\033[0m")
+
 			elif check_line_prefix(Current_line, "INST::"):
 				# Extract and set the instrument VISA address.
 				INST_VISA=extract_prefixed_line(Current_line, "INST:: ")
@@ -3076,7 +3149,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 										# 2. Use the exact title defined above (no underscores!)
 										update_csv_cell(outpath, Data_line, action_column_title, image_path)
 									else:
-										log_print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]: Warning: No image data received.")
+										log_print(f"[ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ]: Warning: No image data received.")
 										# 3. Stay consistent here too
 										update_csv_cell(outpath, Data_line, action_column_title, "ERROR: NO DATA")
 										
