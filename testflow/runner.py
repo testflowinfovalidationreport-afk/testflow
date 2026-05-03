@@ -1,4 +1,4 @@
-	#Version:2.2.1
+	#Version:2.2.2
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -49,7 +49,7 @@ import serial
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:2.2.1"
+code_version= "Version:2.2.2"
 # Serial communication constants
 BAUDRATE = 115200
 
