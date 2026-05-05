@@ -1,4 +1,4 @@
-	#Version:2.2.2
+	#Version:2.2.3
 	#================================================================================
 	#									DISCLAIMER
 	#================================================================================
@@ -49,7 +49,7 @@ import serial
 # Global variables for progress tracking
 _CURRENT_STEP = 0
 _TOTAL_STEPS = 0
-code_version= "Version:2.2.2"
+code_version= "Version:2.2.3"
 # Serial communication constants
 BAUDRATE = 115200
 
@@ -992,8 +992,10 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		# Track per-node action indices and current parsing state
 		action_cols = []
 		current_node = None
+		current_node_type = None
 		action_index_per_node = {}
 		in_action = False
+		in_python_node = False
 		current_action_title = None
 		action_has_query = False  # set True if any CMD line with '?' appears in current action
 		action_command_types = set()  # Track what types of commands this action has
@@ -1004,21 +1006,21 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			if current_node is not None and current_action_title and action_has_query:
 				# Sanitize title and form column like '<Title>(N<node>|A<idx>)'
 				safe_title = (current_action_title)
-				
+
 				# Check what types of commands this action has
 				base_col_name = f"{safe_title}(N{current_node}|A{action_index_per_node[current_node]})"
-				
+
 				# Add base column for queries
 				if 'query' in action_command_types:
 					if base_col_name not in action_cols:
 						action_cols.append(base_col_name)
-				
+
 				# Add img column for PNG commands
 				if 'png' in action_command_types:
 					img_col_name = f"{safe_title}img(N{current_node}|A{action_index_per_node[current_node]})"
 					if img_col_name not in action_cols:
 						action_cols.append(img_col_name)
-				
+
 				# Add set column for SET commands
 				if 'set' in action_command_types:
 					set_col_name = f"{safe_title}set(N{current_node}|A{action_index_per_node[current_node]})"
@@ -1030,7 +1032,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 			s = ln.strip()
 
 			# Node start resets action state and sets current node number
-			m_node = re.match(r"#NODE\s*(\d+)\s*\(", s)
+			m_node = re.match(r"#NODE\s*(\d+)\s*\(([^)]*)\)", s)
 			if m_node:
 				# Close any open action before switching node
 				if in_action:
@@ -1041,7 +1043,39 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 					action_command_types.clear()
 
 				current_node = int(m_node.group(1))
+				current_node_type = m_node.group(2).strip().lower()
+				in_python_node = (current_node_type == 'python')
 				action_index_per_node.setdefault(current_node, 0)
+				continue
+
+			# Python node: collect INPUTS/OUTPUTs as CSV columns
+			if in_python_node:
+				if s.upper().startswith("INPUTS:"):
+					inputs_str = s.split(":", 1)[1].strip()
+					for _part in inputs_str.split(","):
+						_part = _part.strip()
+						if not _part:
+							continue
+						if " " in _part:
+							_part = _part.split(" ", 1)[1].strip()
+						_argname = _part.split("=", 1)[0].strip() if "=" in _part else _part
+						col = f"N{current_node}({_argname})"
+						if col not in action_cols:
+							action_cols.append(col)
+				elif s.upper().startswith("OUTPUTS:"):
+					outputs_str = s.split(":", 1)[1].strip()
+					for _opart in outputs_str.split(","):
+						_opart = _opart.strip()
+						if not _opart:
+							continue
+						_otitle = _opart.split("=", 1)[0].strip() if "=" in _opart else _opart
+						col = f"N{current_node}({_otitle})"
+						if col not in action_cols:
+							action_cols.append(col)
+				elif s.startswith("#END_NODE"):
+					in_python_node = False
+					current_node = None
+					current_node_type = None
 				continue
 
 			# Action start within the current node
@@ -1095,6 +1129,7 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 					action_has_query = False
 					action_command_types.clear()
 				current_node = None
+				current_node_type = None
 				continue
 
 		# If file ended while still inside an action, finalize it
@@ -1243,7 +1278,14 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 		if isinstance(column, str):
 			header = reader[0]
 			if column not in header:
-				raise ValueError(f"Column '{column}' not found in CSV.")
+				# Dynamically add the new column before Date and Time
+				insert_pos = len(header)
+				for _tail in ("Time", "Date"):
+					if _tail in header:
+						insert_pos = min(insert_pos, header.index(_tail))
+				header.insert(insert_pos, column)
+				for row in reader[1:]:
+					row.insert(insert_pos, "")
 			col_index = header.index(column)
 		else:
 			col_index = int(column)
@@ -3017,17 +3059,21 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 
 						# Parse INPUTS: int arg1=5, arg2=${Freq}  -> positional args list
 						py_call_args = []
+						py_arg_names = []
 						if py_inputs_line:
 							for _part in py_inputs_line.split(","):
 								_part = _part.strip()
 								# strip optional type prefix (e.g. "int arg1=5" -> "arg1=5")
 								if " " in _part:
 									_part = _part.split(" ", 1)[1].strip()
-								# resolve ${vars} in the value side
+								# capture argument name
 								if "=" in _part:
+									_arg_name = _part.split("=", 1)[0].strip()
 									_val_str = _part.split("=", 1)[1].strip()
 								else:
+									_arg_name = _part
 									_val_str = _part
+								py_arg_names.append(_arg_name)
 								if has_variable(_val_str):
 									_val_str = replace_variables_with_current_values(_val_str, variables)
 								# try numeric conversion, else keep as string
@@ -3040,22 +3086,41 @@ def run_script(script_path: str, output_path: str, debug_mode: bool=False):
 										_val = _val_str
 								py_call_args.append(_val)
 
-						# Parse OUTPUTs: result=${tscale}  -> output variable name
-						py_output_var = None
+						# Parse OUTPUTs: val1=${var1}, val2=${var2}  -> list of (title, var_name)
+						py_outputs = []  # list of (title, var_name)
 						if py_outputs_line:
-							_om = re.search(r"\$\{([^}]+)\}", py_outputs_line)
-							if _om:
-								py_output_var = _om.group(1).strip()
+							for _opart in py_outputs_line.split(","):
+								_opart = _opart.strip()
+								if not _opart:
+									continue
+								_otitle = _opart.split("=", 1)[0].strip() if "=" in _opart else None
+								_ovm = re.search(r"\$\{([^}]+)\}", _opart)
+								_ovar = _ovm.group(1).strip() if _ovm else None
+								if _otitle is None:
+									_otitle = _ovar
+								py_outputs.append((_otitle, _ovar))
 
 						log_print(f"[ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ]: Calling {py_module_path} main({py_call_args})")
 						try:
 							py_result = _py_mod.main(*py_call_args)
-							if py_output_var is not None:
-								if py_output_var in variables:
-									variables[py_output_var]['current_value'] = py_result
-								else:
-									variables[py_output_var] = {'values': [py_result], 'current_value': py_result}
-								log_print(f"[ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ]: {py_output_var} = {py_result}")
+							# Write each input argument to CSV as N<n>(<argname>)
+							_node_n = node_info['node_number']
+							for _aname, _aval in zip(py_arg_names, py_call_args):
+								update_csv_cell(outpath, Data_line, f"N{_node_n}({_aname})", _aval)
+							# Unpack result into a tuple for multi-return, single value otherwise
+							if len(py_outputs) > 1:
+								py_results = py_result if isinstance(py_result, tuple) else (py_result,)
+							else:
+								py_results = (py_result,)
+							for (_otitle, _ovar), _oval in zip(py_outputs, py_results):
+								if _otitle is not None:
+									update_csv_cell(outpath, Data_line, f"N{_node_n}({_otitle})", _oval)
+								if _ovar is not None:
+									if _ovar in variables:
+										variables[_ovar]['current_value'] = _oval
+									else:
+										variables[_ovar] = {'values': [_oval], 'current_value': _oval}
+									log_print(f"[ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ]: {_ovar} = {_oval}")
 						except Exception as _py_ex:
 							log_print(f"[ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ]: \033[41mError in Python node {node_info['node_number']}: {_py_ex}\033[0m")
 
